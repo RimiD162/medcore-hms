@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Healthixio — Smart Healthcare, Seamlessly Managed | Enterprise Hospital Management System</title>
+  <meta name="description" content="Next-generation Hospital Management System (HMS) unifying clinical EMR, IPD/OPD bed management, pharmacy inventory, automated lab diagnostics, and ABDM M2 digital records.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path fill='%231e3a8a' d='M16 2L4 7v9c0 8.5 5.5 13.5 12 15 6.5-1.5 12-6.5 12-15V7L16 2z'/><path fill='%2310b981' d='M14 9h4v4h4v4h-4v4h-4v-4h-4v-4h4z'/></svg>">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/landing.css">
+</head>
+<body>
+
+  <!-- ===================================================================
+       1. STICKY GLASS NAVBAR
+       =================================================================== -->
+  <nav class="landing-nav" id="main-nav" aria-label="Primary Navigation">
+    <div class="container nav-container">
+      
+      <!-- Brand Logo -->
+      <a href="index.html" class="brand-logo logo-dark" aria-label="Healthixio Home">
+        <div class="brand-icon-shield">
+          <svg viewBox="0 0 36 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M18 2L3 8V18.5C3 29.5 9.5 35.8 18 38C26.5 35.8 33 29.5 33 18.5V8L18 2Z" fill="#1e3a8a" stroke="#3b82f6" stroke-width="2"/>
+            <path d="M15.5 11H20.5V16H25.5V21H20.5V26H15.5V21H10.5V16H15.5V11Z" fill="#10b981"/>
+            <path d="M9 18.5H13L15 15L18 22L20.5 17L22 18.5H27" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="brand-name">
+          <span class="part-primary">HEALTH</span><span class="part-accent">IXIO</span>
+        </span>
+      </a>
+
+      <!-- Navigation Links -->
+      <ul class="nav-links" id="nav-links-list">
+        <li class="nav-item"><a href="#solutions" class="active">Solutions</a></li>
+        <li class="nav-item"><a href="#roles">Clinical Roles</a></li>
+        <li class="nav-item"><a href="#abdm">ABDM & Security</a></li>
+        <li class="nav-item"><a href="#departments">Departments</a></li>
+        <li class="nav-item"><a href="#pricing">Deployment</a></li>
+      </ul>
+
+      <!-- Navbar Actions -->
+      <div class="nav-actions">
+        <a href="auth.html" class="nav-signin-link" id="nav-signin-btn">
+          Sign In
+        </a>
+        <a href="auth.html" class="btn-primary btn-nav-demo" id="nav-demo-btn">
+          <span>Launch Workspace</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+        <button type="button" class="mobile-menu-toggle" id="mobile-menu-btn" aria-label="Toggle navigation menu">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="12" x2="21" y2="12"/>
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+  </nav>
+
+  <!-- ===================================================================
+       2. HERO SECTION
+       =================================================================== -->
+  <header class="hero-section" id="hero">
+    <div class="container">
+      <div class="hero-grid">
+        
+        <!-- Left Hero Copy -->
+        <div class="hero-copy">
+          <div class="hero-badge-wrap">
+            <div class="badge-pill-verified">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-3zm-2 16l-4-4 1.41-1.41L10 15.17l6.59-6.59L18 10l-8 8z"/>
+              </svg>
+              <span>ABDM Certified</span>
+              <span class="badge-separator">·</span>
+              <span>Trusted by 500+ Hospitals</span>
+            </div>
+          </div>
+
+          <h1 class="hero-main-title">
+            Smart Healthcare,
+            <span class="hero-gradient-text">Seamlessly Managed</span>
+          </h1>
+
+          <p class="hero-subtitle">
+            The next-generation Hospital Management System uniting electronic health records (EMR), live bed telemetry, automated pharmacy dispensing, pathology labs, and digital billing into one seamless clinical cockpit.
+          </p>
+
+          <div class="hero-cta-group">
+            <a href="auth.html" class="btn-primary" id="hero-btn-auth" style="padding: 1rem 1.8rem; font-size: 1rem;">
+              <span>Sign In to Dashboard</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </a>
+            
+            <a href="#roles" class="btn-ghost-dark" style="padding: 0.95rem 1.6rem; font-size: 0.95rem;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polygon points="10 8 16 12 10 16 10 8"/>
+              </svg>
+              <span>Interactive Role Demo</span>
+            </a>
+          </div>
+
+          <!-- Social Proof / Star Rating -->
+          <div class="hero-trust-row">
+            <div class="trust-avatar-stack">
+              <div class="trust-avatar">👨‍⚕️</div>
+              <div class="trust-avatar">👩‍⚕️</div>
+              <div class="trust-avatar">🏥</div>
+              <div class="trust-avatar">💊</div>
+            </div>
+            <div class="trust-rating-text">
+              <strong>4.9/5 Rating</strong> from 1,200+ Chief Medical Officers & Hospital Directors
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Hero Visual & Telemetry Badges -->
+        <div class="hero-visual-wrap">
+          <div class="hero-visual-card">
+            <img src="assets/images/doctor_hero.jpg" alt="Physicians collaborating with digital HMS tablet" class="hero-visual-img">
+            
+            <!-- Floating Live Status Badges -->
+            <div class="float-widget-top">
+              <div class="live-dot"></div>
+              <div>
+                <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; font-weight: 700;">Clinical Telemetry</div>
+                <div style="font-size: 0.95rem; font-weight: 700; color: #ffffff;">99.9% Uptime SLA Active</div>
+              </div>
+            </div>
+
+            <div class="float-widget-bottom">
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                <span style="color: var(--mint-accent); font-size: 1.1rem;">⚡</span>
+                <span style="font-size: 0.92rem; font-weight: 700; color: #ffffff;">68% Faster Discharge</span>
+              </div>
+              <div style="font-size: 0.76rem; color: #cbd5e1;">Automated Billing & Insurance Sync</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Real-Time Hospital Command Center Telemetry Bar -->
+      <div class="hero-telemetry-banner" role="region" aria-label="Live Command Center Statistics">
+        <div class="telemetry-item">
+          <div class="telemetry-icon-box">🛏️</div>
+          <div class="telemetry-data">
+            <span class="telemetry-label">Active Bed Occupancy</span>
+            <span class="telemetry-value" id="tel-beds">42 / 50 Beds (84%)</span>
+          </div>
+        </div>
+
+        <div class="telemetry-item">
+          <div class="telemetry-icon-box">📅</div>
+          <div class="telemetry-data">
+            <span class="telemetry-label">Today's Appointments</span>
+            <span class="telemetry-value" id="tel-appts">142 Consultations</span>
+          </div>
+        </div>
+
+        <div class="telemetry-item">
+          <div class="telemetry-icon-box">🩺</div>
+          <div class="telemetry-data">
+            <span class="telemetry-label">Active Doctors On Duty</span>
+            <span class="telemetry-value" id="tel-docs">28 Specialists</span>
+          </div>
+        </div>
+
+        <div class="telemetry-item">
+          <div class="telemetry-icon-box">💊</div>
+          <div class="telemetry-data">
+            <span class="telemetry-label">Prescriptions Dispensed</span>
+            <span class="telemetry-value" id="tel-pharm">389 Verified</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ===================================================================
+       3. EXPANDED STATS STRIP (Theme Reference Card)
+       =================================================================== -->
+  <section class="stats-strip-section" aria-label="Key Hospital Metrics">
+    <div class="container">
+      <div class="stats-strip-grid">
+        
+        <div class="stats-strip-item">
+          <div class="stats-strip-number" data-target="500">500+</div>
+          <div class="stats-strip-label">Hospitals & Clinics</div>
+          <div class="stats-strip-sub">Nationwide Deployment</div>
+        </div>
+
+        <div class="stats-strip-item">
+          <div class="stats-strip-number">99.9%</div>
+          <div class="stats-strip-label">Uptime SLA</div>
+          <div class="stats-strip-sub">High-Availability Cloud & Hybrid</div>
+        </div>
+
+        <div class="stats-strip-item">
+          <div class="stats-strip-number" data-target="2">2M+</div>
+          <div class="stats-strip-label">Patient Health Records</div>
+          <div class="stats-strip-sub">ABDM M2 Connected</div>
+        </div>
+
+        <div class="stats-strip-item">
+          <div class="stats-strip-number">15 min</div>
+          <div class="stats-strip-label">Avg. OPD Wait Time</div>
+          <div class="stats-strip-sub">Reduced from 65 minutes</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       4. CORE HMS MODULES & SOLUTIONS (Mapped to plan.md)
+       =================================================================== -->
+  <section class="section-padding modules-section" id="solutions">
+    <div class="container">
+      
+      <div class="section-header-center">
+        <span class="section-tag">Enterprise Clinical Suite</span>
+        <h2 class="section-title">Engineered for Complex Hospital Operations</h2>
+        <p class="section-desc">
+          Replace fragmented software with a unified, high-performance healthcare platform built around doctors, nurses, patients, and administrators.
+        </p>
+      </div>
+
+      <div class="modules-grid">
+        
+        <!-- Module 1: EMR & Clinical Records -->
+        <div class="module-card">
+          <div class="module-icon-wrap">📋</div>
+          <h3 class="module-title">Intelligent EMR & Medical Records</h3>
+          <p class="module-desc">
+            Complete longitudinal patient medical records with ICD-10 diagnostic coding, vital trends, allergy alerts, and structured clinical documentation.
+          </p>
+          <ul class="module-feature-list">
+            <li class="module-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Instant longitudinal patient timeline</span>
+            </li>
+            <li class="module-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Digital vitals recording with anomaly alerts</span>
+            </li>
+            <li class="module-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>HL7 FHIR & ABDM M2 compliant format</span>
+            </li>
+          </ul>
+          <a href="auth.html" class="module-link-action">
+            <span>Explore EMR Workspace</span> →
+          </a>
+        </div>
+
+        <!-- Module 2: Bed & IPD Management -->
+        <div class="module-card">
+          <div class="module-icon-wrap">🛏️</div>
+          <h3 class="module-title">Bed & Inpatient (IPD) Management</h3>
+          <p class="module-desc">
+            Interactive ward and bed visualizer with real-time occupancy, automated nurse station handoffs, transfers, and one-click discharge workflows.
+          </p>
+          <ul class="module-feature-list">
+            <li class="module-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Interactive ICU, General & VIP ward map</span>
+            </li>
+            <li class="module-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Real-time nurse shift notes & vital entry</span>
+            </li>
+            <li class="module-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Automated room tariff billing integration</span>
+            </li>
+          </ul>
+          <a href="auth.html" class="module-link-action">
+            <span>Explore Ward Management</span> →
+          </a>
+        </div>
+
+        <!-- Module 3: Smart Pharmacy & Inventory -->
+        <div class="module-card">
+          <div class="module-icon-wrap">💊</div>
+          <h3 class="module-title">Smart Pharmacy & Batch Inventory</h3>
+          <p class="module-desc">
+            End-to-end pharmaceutical dispensing linked directly to doctor e-prescriptions, automated batch expiry radar, and minimum stock alerts.
+          </p>
+          <ul class="module-feature-list">
+            <li class="module-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Barcode dispensing & e-prescription sync</span>
+            </li>
+            <li class="module-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>30-day early expiry alert radar</span>
+            </li>
+            <li class="module-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Automated supplier purchase orders</span>
+            </li>
+          </ul>
+          <a href="auth.html" class="module-link-action">
+            <span>Explore Pharmacy Suite</span> →
+          </a>
+        </div>
+
+        <!-- Module 4: Laboratory & Diagnostics -->
+        <div class="module-card">
+          <div class="module-icon-wrap">🔬</div>
+          <h3 class="module-title">Laboratory & Pathology Automation</h3>
+          <p class="module-desc">
+            Complete diagnostic test tracking from specimen barcode collection to analyzer interfacing, pathologist digital signatures, and SMS/WhatsApp reports.
+          </p>
+          <ul class="module-feature-list">
+            <li class="module-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Specimen barcode tracking & status radar</span>
+            </li>
+            <li class="module-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Critical abnormal result alert broadcast</span>
+            </li>
+            <li class="module-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Instant PDF generation with doctor e-signature</span>
+            </li>
+          </ul>
+          <a href="auth.html" class="module-link-action">
+            <span>Explore Diagnostics</span> →
+          </a>
+        </div>
+
+        <!-- Module 5: Appointments & Telehealth -->
+        <div class="module-card">
+          <div class="module-icon-wrap">📅</div>
+          <h3 class="module-title">Doctor Scheduling & OPD Queue</h3>
+          <p class="module-desc">
+            Multi-specialty doctor schedule rosters, live token display systems for waiting rooms, automated SMS reminders, and integrated HD video consultations.
+          </p>
+          <ul class="module-feature-list">
+            <li class="module-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Real-time OPD token screen for waiting areas</span>
+            </li>
+            <li class="module-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Multi-channel SMS & WhatsApp notifications</span>
+            </li>
+            <li class="module-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>1-Click HIPAA-compliant telehealth rooms</span>
+            </li>
+          </ul>
+          <a href="auth.html" class="module-link-action">
+            <span>Explore Scheduling</span> →
+          </a>
+        </div>
+
+        <!-- Module 6: Billing & ABDM Insurance Claims -->
+        <div class="module-card">
+          <div class="module-icon-wrap">💳</div>
+          <h3 class="module-title">Enterprise Billing & Insurance (TPA)</h3>
+          <p class="module-desc">
+            Unified billing capturing consultations, beds, medicines, and tests automatically. Instant TPA insurance pre-auth and Ayushman Bharat claim processing.
+          </p>
+          <ul class="module-feature-list">
+            <li class="module-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Auto-aggregated invoices across all departments</span>
+            </li>
+            <li class="module-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Cashless TPA insurance claim settlement</span>
+            </li>
+            <li class="module-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Integrated POS, UPI, credit & multi-split payments</span>
+            </li>
+          </ul>
+          <a href="auth.html" class="module-link-action">
+            <span>Explore Billing Suite</span> →
+          </a>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       5. INTERACTIVE ROLE-BASED WORKFLOW SWITCHER
+       =================================================================== -->
+  <section class="section-padding role-section" id="roles">
+    <div class="container">
+      
+      <div class="section-header-center">
+        <span class="section-tag" style="background: rgba(255, 255, 255, 0.15); color: #ffffff;">Tailored Workspaces</span>
+        <h2 class="section-title">Designed for Every Clinical Role</h2>
+        <p class="section-desc">
+          Every healthcare professional receives an optimized interface tailored precisely to their duties, credentials, and regulatory privileges.
+        </p>
+      </div>
+
+      <!-- Role Selector Chips -->
+      <div class="role-tabs-bar" role="tablist">
+        <button type="button" class="role-tab-chip active" data-role-id="doctor" role="tab" aria-selected="true">
+          <span>🩺</span> Chief Doctor
+        </button>
+        <button type="button" class="role-tab-chip" data-role-id="admin" role="tab" aria-selected="false">
+          <span>🏥</span> Hospital Director
+        </button>
+        <button type="button" class="role-tab-chip" data-role-id="nurse" role="tab" aria-selected="false">
+          <span>💉</span> ICU Head Nurse
+        </button>
+        <button type="button" class="role-tab-chip" data-role-id="pharmacist" role="tab" aria-selected="false">
+          <span>💊</span> Chief Pharmacist
+        </button>
+        <button type="button" class="role-tab-chip" data-role-id="patient" role="tab" aria-selected="false">
+          <span>👤</span> Patient Portal
+        </button>
+      </div>
+
+      <!-- Dynamic Role Showcase Box -->
+      <div class="role-display-box" id="role-display-box">
+        
+        <div class="role-display-info">
+          <span class="badge-pill-verified" id="role-badge" style="margin-bottom: 1rem;">
+            Clinical Experience
+          </span>
+          <h3 id="role-title">Dr. Sarah Mitchell — Chief Surgeon</h3>
+          <p id="role-desc">
+            Access immediate longitudinal patient charts, order diagnostic test panels in seconds, write digital prescriptions with allergy checks, and manage surgical lists.
+          </p>
+
+          <ul class="role-feature-bullets" id="role-bullets">
+            <li class="role-bullet-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>1-Click access to patient vitals trendline & radiology imagery</span>
+            </li>
+            <li class="role-bullet-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Automated drug-to-drug contraindication safety scanner</span>
+            </li>
+            <li class="role-bullet-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Instant mobile sign-off on pathology & surgical discharge summaries</span>
+            </li>
+          </ul>
+
+          <a href="auth.html" class="btn-primary" style="padding: 0.85rem 1.6rem; font-size: 0.95rem;">
+            <span>Try Doctor Workspace</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </a>
+        </div>
+
+        <!-- Role Preview Card Mockup -->
+        <div class="role-preview-card" id="role-preview-card">
+          <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.85rem; margin-bottom: 1rem;">
+            <div style="font-weight: 700; font-size: 0.95rem; color: #0f172a;" id="card-preview-header">
+              Active Consultation Queue
+            </div>
+            <span class="badge-pill-light" style="font-size: 0.72rem;">Live Sync</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;" id="card-preview-list">
+            <div style="padding: 0.75rem; background: #f8fafc; border-radius: 8px; border-left: 3px solid #10b981; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-weight: 700; font-size: 0.85rem;">Robert Davis (42y / Male)</div>
+                <div style="font-size: 0.76rem; color: #64748b;">Post-op Cardiac Checkup · Token #14</div>
+              </div>
+              <span style="font-size: 0.75rem; font-weight: 600; color: #10b981; background: #ecfdf5; padding: 2px 8px; border-radius: 99px;">In Room</span>
+            </div>
+
+            <div style="padding: 0.75rem; background: #f8fafc; border-radius: 8px; border-left: 3px solid #6366f1; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-weight: 700; font-size: 0.85rem;">Anita Sharma (29y / Female)</div>
+                <div style="font-size: 0.76rem; color: #64748b;">Lab Review (CBC & Lipid Profile) · Token #15</div>
+              </div>
+              <span style="font-size: 0.75rem; font-weight: 600; color: #6366f1; background: #e0e7ff; padding: 2px 8px; border-radius: 99px;">Waiting (4m)</span>
+            </div>
+
+            <div style="padding: 0.75rem; background: #f8fafc; border-radius: 8px; border-left: 3px solid #94a3b8; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-weight: 700; font-size: 0.85rem;">Marcus Vance (68y / Male)</div>
+                <div style="font-size: 0.76rem; color: #64748b;">Hypertension Follow-up · Token #16</div>
+              </div>
+              <span style="font-size: 0.75rem; font-weight: 600; color: #64748b; background: #f1f5f9; padding: 2px 8px; border-radius: 99px;">Scheduled</span>
+            </div>
+          </div>
+
+          <div style="margin-top: 1.25rem; padding-top: 0.75rem; border-top: 1px dashed #e2e8f0; display: flex; justify-content: space-between; font-size: 0.82rem; color: #64748b;">
+            <span>Consultations Completed Today: <strong>24</strong></span>
+            <span style="color: var(--emerald-600); font-weight: 600;">Avg: 8.5 min/patient</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       6. ABDM & ENTERPRISE COMPLIANCE STANDARDS
+       =================================================================== -->
+  <section class="section-padding compliance-section" id="abdm">
+    <div class="container">
+      
+      <div class="section-header-center">
+        <span class="section-tag">Regulatory Excellence</span>
+        <h2 class="section-title">ABDM M2 Certified & Enterprise Compliant</h2>
+        <p class="section-desc">
+          Engineered to satisfy the strictest international healthcare regulations, safeguarding sensitive patient data with military-grade encryption and auditability.
+        </p>
+      </div>
+
+      <div class="compliance-grid">
+        
+        <div class="compliance-card">
+          <div class="compliance-card-icon">🇮🇳</div>
+          <h3 class="compliance-title">ABDM Milestone 2</h3>
+          <p class="compliance-desc">
+            Certified by the National Health Authority for Ayushman Bharat Health Account (ABHA) creation, scan-and-share, and health records exchange.
+          </p>
+        </div>
+
+        <div class="compliance-card">
+          <div class="compliance-card-icon">🛡️</div>
+          <h3 class="compliance-title">HIPAA Compliant</h3>
+          <p class="compliance-desc">
+            Meets all Administrative, Physical, and Technical safeguards of the Health Insurance Portability and Accountability Act.
+          </p>
+        </div>
+
+        <div class="compliance-card">
+          <div class="compliance-card-icon">🔒</div>
+          <h3 class="compliance-title">256-Bit AES Encryption</h3>
+          <p class="compliance-desc">
+            All clinical data, diagnostics, and patient identifiers are fully encrypted in transit (TLS 1.3) and at rest with hardware keys.
+          </p>
+        </div>
+
+        <div class="compliance-card">
+          <div class="compliance-card-icon">📜</div>
+          <h3 class="compliance-title">Full Audit Trails</h3>
+          <p class="compliance-desc">
+            Immutable logging of every record view, modification, prescription issue, and diagnostic sign-off for complete legal accountability.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       7. DEPARTMENTS SHOWCASE
+       =================================================================== -->
+  <section class="section-padding" id="departments" style="background-color: var(--surface-canvas);">
+    <div class="container">
+      
+      <div class="section-header-center">
+        <span class="section-tag">Cross-Specialty Coverage</span>
+        <h2 class="section-title">Empowering Every Clinical Department</h2>
+        <p class="section-desc">
+          Modular clinical workflows configured specifically for the demands of specialized medical fields.
+        </p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+        
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.75rem;">
+          <div style="font-size: 2rem; margin-bottom: 0.75rem;">🚨</div>
+          <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.35rem;">Emergency & Trauma (24/7)</h3>
+          <p style="font-size: 0.88rem; color: #64748b; line-height: 1.5;">
+            Fast-path triage registration (Critical, High, Medium), instant doctor dispatch, and resuscitation bed allocation.
+          </p>
+        </div>
+
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.75rem;">
+          <div style="font-size: 2rem; margin-bottom: 0.75rem;">🫀</div>
+          <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.35rem;">Cardiology & Cath Lab</h3>
+          <p style="font-size: 0.88rem; color: #64748b; line-height: 1.5;">
+            ECG telemetry integration, cardiac pacing charts, angioplasty consumables tracking, and ICU telemetry feeds.
+          </p>
+        </div>
+
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.75rem;">
+          <div style="font-size: 2rem; margin-bottom: 0.75rem;">🧠</div>
+          <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.35rem;">Neurology & Neurosurgery</h3>
+          <p style="font-size: 0.88rem; color: #64748b; line-height: 1.5;">
+            Glasgow Coma Scale (GCS) tracking, neuro-ICU monitoring, DICOM brain imaging sync, and surgical recovery timers.
+          </p>
+        </div>
+
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.75rem;">
+          <div style="font-size: 2rem; margin-bottom: 0.75rem;">👶</div>
+          <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 0.35rem;">Pediatrics & NICU</h3>
+          <p style="font-size: 0.88rem; color: #64748b; line-height: 1.5;">
+            Immunization schedules, pediatric growth curve charting, age/weight dose calculation calculator, and NICU incubators.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       8. PRICING & DEPLOYMENT TIERS
+       =================================================================== -->
+  <section class="section-padding pricing-section" id="pricing">
+    <div class="container">
+      
+      <div class="section-header-center">
+        <span class="section-tag">Flexible Deployment</span>
+        <h2 class="section-title">Scalable for Clinics to Hospital Networks</h2>
+        <p class="section-desc">
+          Choose the deployment model suited to your clinical scale. Available as cloud SaaS, private cloud, or localized on-premise installation.
+        </p>
+      </div>
+
+      <div class="pricing-grid">
+        
+        <!-- Tier 1 -->
+        <div class="pricing-card">
+          <div class="pricing-plan-name">Clinic & Daycare</div>
+          <div class="pricing-plan-desc">For specialized clinics, daycare centers, and doctor practices up to 15 beds.</div>
+          <div class="pricing-price-wrap">
+            <span class="pricing-price">$249</span>
+            <span class="pricing-term">/ month</span>
+          </div>
+          <ul class="pricing-features-list">
+            <li class="pricing-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Up to 15 Inpatient Beds</span>
+            </li>
+            <li class="pricing-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Full EMR & OPD Queue System</span>
+            </li>
+            <li class="pricing-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Integrated Pharmacy & Billing</span>
+            </li>
+            <li class="pricing-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>ABDM M2 ABHA Card Sync</span>
+            </li>
+          </ul>
+          <a href="auth.html" class="btn-secondary" style="width: 100%; text-align: center;">Get Started</a>
+        </div>
+
+        <!-- Tier 2 (Featured) -->
+        <div class="pricing-card featured">
+          <div class="pricing-featured-badge">Most Popular</div>
+          <div class="pricing-plan-name">Multi-Specialty Hospital</div>
+          <div class="pricing-plan-desc">Complete end-to-end HMS for hospitals up to 150 beds with ICU and OT suites.</div>
+          <div class="pricing-price-wrap">
+            <span class="pricing-price">$699</span>
+            <span class="pricing-term">/ month</span>
+          </div>
+          <ul class="pricing-features-list">
+            <li class="pricing-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Up to 150 Beds (ICU, IPD, OT)</span>
+            </li>
+            <li class="pricing-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Automated Pathology & LIS Interfacing</span>
+            </li>
+            <li class="pricing-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Pharmacy Batch Expiry Radar</span>
+            </li>
+            <li class="pricing-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Cashless TPA Insurance Claims</span>
+            </li>
+            <li class="pricing-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>99.9% Uptime SLA Guarantee</span>
+            </li>
+          </ul>
+          <a href="auth.html" class="btn-primary" style="width: 100%; text-align: center;">Deploy Hospital Suite</a>
+        </div>
+
+        <!-- Tier 3 -->
+        <div class="pricing-card">
+          <div class="pricing-plan-name">Enterprise Network</div>
+          <div class="pricing-plan-desc">For hospital chains, multi-location healthcare systems, and medical universities.</div>
+          <div class="pricing-price-wrap">
+            <span class="pricing-price">Custom</span>
+            <span class="pricing-term">/ tailored SLA</span>
+          </div>
+          <ul class="pricing-features-list">
+            <li class="pricing-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Unlimited Beds & Multi-Branch Hierarchy</span>
+            </li>
+            <li class="pricing-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>On-Premise / Air-Gapped Deployment</span>
+            </li>
+            <li class="pricing-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Custom PACS / RIS Radiology Integration</span>
+            </li>
+            <li class="pricing-feature-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>24/7 Dedicated Clinical On-Site Support</span>
+            </li>
+          </ul>
+          <a href="auth.html" class="btn-secondary" style="width: 100%; text-align: center;">Contact Enterprise Team</a>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       9. CALL TO ACTION BANNER
+       =================================================================== -->
+  <section class="cta-banner-section">
+    <div class="container">
+      <div class="cta-banner-card">
+        <h2 class="cta-title">Ready to Elevate Your Hospital Operations?</h2>
+        <p class="cta-subtitle">
+          Join 500+ forward-thinking hospitals improving patient outcomes, shortening wait times, and staying fully ABDM-compliant.
+        </p>
+        <div class="cta-buttons">
+          <a href="auth.html" class="btn-primary" style="padding: 1rem 2rem; font-size: 1.05rem;">
+            <span>Sign In to Your Workspace</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </a>
+          <a href="auth.html" class="btn-ghost-dark" style="padding: 1rem 1.8rem; font-size: 1rem;">
+            <span>Schedule Hospital Demo</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================
+       10. COMPREHENSIVE FOOTER
+       =================================================================== -->
+  <footer class="landing-footer">
+    <div class="container">
+      
+      <div class="footer-top-grid">
+        
+        <div class="footer-col-brand">
+          <div class="brand-logo logo-dark">
+            <div class="brand-icon-shield">
+              <svg viewBox="0 0 36 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 2L3 8V18.5C3 29.5 9.5 35.8 18 38C26.5 35.8 33 29.5 33 18.5V8L18 2Z" fill="#1e3a8a" stroke="#3b82f6" stroke-width="2"/>
+                <path d="M15.5 11H20.5V16H25.5V21H20.5V26H15.5V21H10.5V16H15.5V11Z" fill="#10b981"/>
+                <path d="M9 18.5H13L15 15L18 22L20.5 17L22 18.5H27" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <span class="brand-name">
+              <span class="part-primary">HEALTH</span><span class="part-accent">IXIO</span>
+            </span>
+          </div>
+          <p>
+            Enterprise-grade Hospital Management System digitizing clinical workflows, EMR, beds, diagnostics, and pharmaceutical operations with ABDM compliance.
+          </p>
+          <div style="margin-top: 1.25rem;">
+            <span class="badge-pill-verified">
+              <span class="live-dot"></span>
+              <span>All 18 Systems Fully Operational</span>
+            </span>
+          </div>
+        </div>
+
+        <div>
+          <div class="footer-heading">Clinical Modules</div>
+          <ul class="footer-links-list">
+            <li><a href="#solutions">Electronic Medical Records</a></li>
+            <li><a href="#solutions">Bed & Ward Management (IPD)</a></li>
+            <li><a href="#solutions">Pharmacy & Batch Control</a></li>
+            <li><a href="#solutions">Laboratory & Pathology LIS</a></li>
+            <li><a href="#solutions">OPD Token Queue System</a></li>
+            <li><a href="#solutions">Cashless TPA Billing</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="footer-heading">Compliance & Trust</div>
+          <ul class="footer-links-list">
+            <li><a href="#abdm">ABDM Milestone 2 Gateway</a></li>
+            <li><a href="#abdm">ABHA Patient ID Integration</a></li>
+            <li><a href="#abdm">HIPAA Security Safeguards</a></li>
+            <li><a href="#abdm">ISO 27001 Data Governance</a></li>
+            <li><a href="#abdm">HL7 FHIR Interoperability</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <div class="footer-heading">Hospital Portal</div>
+          <ul class="footer-links-list">
+            <li><a href="auth.html">Staff Sign In</a></li>
+            <li><a href="auth.html">Register New Hospital</a></li>
+            <li><a href="auth.html">1-Click Clinical Demo</a></li>
+            <li><a href="auth.html">Password Recovery</a></li>
+            <li><a href="mailto:support@healthixio.com">24/7 Clinical Support</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 Healthixio Systems Inc. All rights reserved. MedCore HMS Platform.</div>
+        <div style="display: flex; gap: 1.5rem;">
+          <a href="#" style="color: #64748b;">Privacy Policy</a>
+          <a href="#" style="color: #64748b;">Terms of Service</a>
+          <a href="#" style="color: #64748b;">Clinical SLA</a>
+          <a href="auth.html" style="color: var(--mint-accent); font-weight: 600;">Access Portal →</a>
+        </div>
+      </div>
+
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

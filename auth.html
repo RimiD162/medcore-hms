@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — Healthixio | Smart Healthcare, Seamlessly Managed</title>
+  <meta name="description" content="Sign in to your Healthixio / MedCore HMS workspace. Enterprise hospital management system trusted by 500+ hospitals.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><path fill='%231e3a8a' d='M16 2L4 7v9c0 8.5 5.5 13.5 12 15 6.5-1.5 12-6.5 12-15V7L16 2z'/><path fill='%2310b981' d='M14 9h4v4h4v4h-4v4h-4v-4h-4v-4h4z'/></svg>">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/auth.css">
+</head>
+<body>
+
+  <main class="auth-viewport">
+    
+    <!-- LEFT PANEL: Hospital ICU Atmosphere & Clinical Authority (Matches reference) -->
+    <section class="auth-hero-panel" aria-label="Healthixio Brand Overview">
+      <div class="auth-hero-bg"></div>
+
+      <!-- Top Header Navigation -->
+      <header class="auth-hero-header">
+        <a href="index.html" class="brand-logo logo-dark" id="hero-brand-logo" aria-label="Healthixio Home">
+          <div class="brand-icon-shield">
+            <svg viewBox="0 0 36 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M18 2L3 8V18.5C3 29.5 9.5 35.8 18 38C26.5 35.8 33 29.5 33 18.5V8L18 2Z" fill="#1e3a8a" stroke="#3b82f6" stroke-width="2"/>
+              <path d="M15.5 11H20.5V16H25.5V21H20.5V26H15.5V21H10.5V16H15.5V11Z" fill="#10b981"/>
+              <path d="M9 18.5H13L15 15L18 22L20.5 17L22 18.5H27" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="brand-name">
+            <span class="part-primary">HEALTH</span><span class="part-accent">IXIO</span>
+          </span>
+        </a>
+
+        <a href="index.html" class="auth-nav-link" id="nav-back-to-landing">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m15 18-6-6 6-6"/>
+          </svg>
+          <span>Explore Platform</span>
+        </a>
+      </header>
+
+      <!-- Center Copy & Headline (Matches reference) -->
+      <div class="auth-hero-content">
+        <!-- Verified Pill Badge -->
+        <div class="badge-pill-verified" id="auth-verified-badge">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-3zm-2 16l-4-4 1.41-1.41L10 15.17l6.59-6.59L18 10l-8 8z"/>
+          </svg>
+          <span>ABDM Certified</span>
+          <span class="badge-separator">·</span>
+          <span>Trusted by 500+ Hospitals</span>
+        </div>
+
+        <h1 class="auth-hero-title">
+          Smart Healthcare,
+          <span class="title-accent">Seamlessly Managed</span>
+        </h1>
+
+        <p class="auth-hero-description">
+          Integrated EMR, real-time bed telemetry, automated pharmacy dispensing, and smart pathology in a single unified workspace.
+        </p>
+
+        <!-- Glassmorphic Stats Card (Identical to reference) -->
+        <div class="auth-stats-card" id="hero-stats-card" role="region" aria-label="System Metrics">
+          <div class="auth-stat-item">
+            <span class="auth-stat-value" id="stat-hospitals">500+</span>
+            <span class="auth-stat-label">Hospitals</span>
+          </div>
+          <div class="auth-stat-divider"></div>
+          <div class="auth-stat-item">
+            <span class="auth-stat-value" id="stat-uptime">99.9%</span>
+            <span class="auth-stat-label">Uptime SLA</span>
+          </div>
+          <div class="auth-stat-divider"></div>
+          <div class="auth-stat-item">
+            <span class="auth-stat-value" id="stat-patients">2M+</span>
+            <span class="auth-stat-label">Patients</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Footer (Matches reference) -->
+      <footer class="auth-hero-footer">
+        <span>&copy; 2026 Healthixio Systems. All rights reserved.</span>
+        <div class="auth-system-status">
+          <span class="live-dot"></span>
+          <span>ABDM M2 Gateway Operational</span>
+        </div>
+      </footer>
+    </section>
+
+    <!-- RIGHT PANEL: Elevated Authentication Card & Interactive Forms -->
+    <section class="auth-form-panel" aria-label="Sign In Panel">
+      <div class="auth-card" id="main-auth-card">
+        
+        <!-- Brand in Card (Matches reference) -->
+        <div class="auth-card-brand">
+          <div class="brand-logo" id="card-brand-logo">
+            <div class="brand-icon-shield">
+              <svg viewBox="0 0 36 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 2L3 8V18.5C3 29.5 9.5 35.8 18 38C26.5 35.8 33 29.5 33 18.5V8L18 2Z" fill="#1e3a8a" stroke="#2563eb" stroke-width="2"/>
+                <path d="M15.5 11H20.5V16H25.5V21H20.5V26H15.5V21H10.5V16H15.5V11Z" fill="#10b981"/>
+                <path d="M9 18.5H13L15 15L18 22L20.5 17L22 18.5H27" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <span class="brand-name">
+              <span class="part-primary">HEALTH</span><span class="part-accent">IXIO</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Card Header -->
+        <div class="auth-card-header">
+          <h2 class="auth-card-title" id="auth-header-title">Welcome back</h2>
+          <p class="auth-card-subtitle" id="auth-header-subtitle">Sign in to your Healthixio workspace</p>
+        </div>
+
+        <!-- Navigation Tabs: Sign In / Register / Quick Demo -->
+        <div class="auth-tabs" role="tablist">
+          <button type="button" class="auth-tab-btn active" id="tab-btn-signin" role="tab" aria-selected="true" aria-controls="pane-signin">Sign In</button>
+          <button type="button" class="auth-tab-btn" id="tab-btn-register" role="tab" aria-selected="false" aria-controls="pane-register">Register</button>
+          <button type="button" class="auth-tab-btn" id="tab-btn-demo" role="tab" aria-selected="false" aria-controls="pane-demo">1-Click Demo</button>
+        </div>
+
+        <!-- TAB 1: Sign In Form (Matches reference layout) -->
+        <div class="auth-tab-pane active" id="pane-signin" role="tabpanel">
+          <form class="auth-form" id="form-signin" novalidate>
+            <!-- Email Address Input -->
+            <div class="form-group">
+              <label for="signin-email" class="form-label">Email address</label>
+              <div class="input-wrapper">
+                <span class="input-icon-left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="20" height="16" x="2" y="4" rx="2"/>
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                  </svg>
+                </span>
+                <input 
+                  type="email" 
+                  id="signin-email" 
+                  name="email" 
+                  class="form-control" 
+                  placeholder="you@hospital.com" 
+                  value="doctor.mitchell@healthixio.com"
+                  required 
+                  autocomplete="email"
+                >
+              </div>
+            </div>
+
+            <!-- Password Input with Eye Toggle & Forgot Link -->
+            <div class="form-group">
+              <div class="form-label-row">
+                <label for="signin-password" class="form-label">Password</label>
+                <button type="button" class="form-link-forgot" id="btn-forgot-password">Forgot password?</button>
+              </div>
+              <div class="input-wrapper">
+                <span class="input-icon-left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                </span>
+                <input 
+                  type="password" 
+                  id="signin-password" 
+                  name="password" 
+                  class="form-control has-right-icon" 
+                  placeholder="••••••••••••" 
+                  value="medcore@secure2026"
+                  required 
+                  autocomplete="current-password"
+                >
+                <button type="button" class="input-icon-right" id="toggle-password-btn" aria-label="Toggle password visibility">
+                  <svg id="eye-icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <svg id="eye-icon-closed" style="display: none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                    <line x1="2" x2="22" y1="2" y2="22"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Keep me signed in Checkbox -->
+            <div class="form-options-row">
+              <label class="checkbox-label" for="remember-me">
+                <input type="checkbox" id="remember-me" name="remember" checked style="display: none;">
+                <span class="checkbox-custom">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </span>
+                <span>Keep me signed in</span>
+              </label>
+            </div>
+
+            <!-- Submit Button (Matches reference "Sign In to Dashboard ->") -->
+            <button type="submit" class="btn-auth-submit" id="btn-submit-signin">
+              <span class="btn-text">Sign In to Dashboard</span>
+              <svg class="btn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12h14"/>
+                <path d="m12 5 7 7-7 7"/>
+              </svg>
+              <span class="spinner" aria-hidden="true"></span>
+            </button>
+          </form>
+        </div>
+
+        <!-- TAB 2: Register Hospital / Organization -->
+        <div class="auth-tab-pane" id="pane-register" style="display: none;" role="tabpanel">
+          <form class="auth-form" id="form-register" novalidate>
+            <div class="form-group">
+              <label for="reg-hosp-name" class="form-label">Hospital / Healthcare Facility</label>
+              <div class="input-wrapper">
+                <span class="input-icon-left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 21h18"/>
+                    <path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/>
+                    <path d="M9 7h2"/>
+                    <path d="M9 11h2"/>
+                    <path d="M9 15h2"/>
+                    <path d="M13 7h2"/>
+                    <path d="M13 11h2"/>
+                    <path d="M13 15h2"/>
+                  </svg>
+                </span>
+                <input type="text" id="reg-hosp-name" class="form-control" placeholder="e.g. St. Jude Memorial Hospital" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-email" class="form-label">Official Administrator Email</label>
+              <div class="input-wrapper">
+                <span class="input-icon-left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="20" height="16" x="2" y="4" rx="2"/>
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                  </svg>
+                </span>
+                <input type="email" id="reg-email" class="form-control" placeholder="admin@hospital.org" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-role" class="form-label">Primary Role</label>
+              <select id="reg-role" class="form-control" style="padding-left: 1rem;">
+                <option value="super-admin">Super Admin / Hospital Director</option>
+                <option value="chief-doctor">Chief Medical Officer (CMO)</option>
+                <option value="head-nurse">Nursing Superintendent</option>
+                <option value="pharmacist">Chief Pharmacist</option>
+                <option value="lab-director">Pathology Lab Director</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="reg-password" class="form-label">Create Security Key / Password</label>
+              <div class="input-wrapper">
+                <span class="input-icon-left">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                </span>
+                <input type="password" id="reg-password" class="form-control" placeholder="Min. 8 characters" required>
+              </div>
+            </div>
+
+            <button type="submit" class="btn-auth-submit" id="btn-submit-register">
+              <span class="btn-text">Create Hospital Workspace</span>
+              <svg class="btn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+              <span class="spinner"></span>
+            </button>
+          </form>
+        </div>
+
+        <!-- TAB 3: 1-Click Interactive Demo Login -->
+        <div class="auth-tab-pane" id="pane-demo" style="display: none;" role="tabpanel">
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+            Select a verified clinical staff role below to sign in instantly without typing:
+          </p>
+
+          <div class="demo-roles-grid">
+            <div class="demo-role-card" data-email="doctor.sarah@healthixio.com" data-role="Chief Doctor" data-name="Dr. Sarah Mitchell, MD">
+              <div class="demo-role-icon">🩺</div>
+              <div class="demo-role-info">
+                <div class="demo-role-name">Dr. Sarah Mitchell</div>
+                <div class="demo-role-desc">Chief Surgeon & OPD Lead</div>
+              </div>
+              <span class="demo-role-badge">Doctor</span>
+            </div>
+
+            <div class="demo-role-card" data-email="admin.vance@healthixio.com" data-role="Super Admin" data-name="Arthur Vance, Hospital Director">
+              <div class="demo-role-icon">🏥</div>
+              <div class="demo-role-info">
+                <div class="demo-role-name">Arthur Vance</div>
+                <div class="demo-role-desc">Hospital General Director</div>
+              </div>
+              <span class="demo-role-badge">Admin</span>
+            </div>
+
+            <div class="demo-role-card" data-email="nurse.elena@healthixio.com" data-role="ICU Nurse" data-name="Elena Chen, RN">
+              <div class="demo-role-icon">💉</div>
+              <div class="demo-role-info">
+                <div class="demo-role-name">Elena Chen, RN</div>
+                <div class="demo-role-desc">ICU Ward Superintendent</div>
+              </div>
+              <span class="demo-role-badge">Nursing</span>
+            </div>
+
+            <div class="demo-role-card" data-email="pharmacy.david@healthixio.com" data-role="Chief Pharmacist" data-name="David Ross, RPh">
+              <div class="demo-role-icon">💊</div>
+              <div class="demo-role-info">
+                <div class="demo-role-name">David Ross, RPh</div>
+                <div class="demo-role-desc">Pharmacy & Batch Control</div>
+              </div>
+              <span class="demo-role-badge">Pharmacy</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer Help Link (Matches reference "Having trouble? Contact support") -->
+        <div class="auth-card-footer">
+          <span>Having trouble? </span>
+          <a href="mailto:support@healthixio.com" class="auth-support-link" id="link-support">Contact support</a>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: Forgot Password Recovery -->
+  <div class="modal-overlay" id="modal-forgot-password" role="dialog" aria-modal="true" aria-labelledby="modal-forgot-title">
+    <div class="modal-card">
+      <button type="button" class="modal-close-btn" id="btn-close-forgot" aria-label="Close dialog">✕</button>
+      <div style="margin-bottom: 1.25rem;">
+        <span class="badge-pill-light" style="margin-bottom: 0.75rem;">Account Security</span>
+        <h3 id="modal-forgot-title" style="font-size: 1.35rem; font-weight: 700; color: var(--text-main); margin-top: 0.4rem;">
+          Reset your password
+        </h3>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.35rem;">
+          Enter your registered hospital work email and we will send a temporary one-time passkey with ABDM audit verification.
+        </p>
+      </div>
+
+      <form id="form-forgot-modal" style="display: flex; flex-direction: column; gap: 1rem;">
+        <div class="form-group">
+          <label for="forgot-email" class="form-label">Hospital Email</label>
+          <div class="input-wrapper">
+            <span class="input-icon-left">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect width="20" height="16" x="2" y="4" rx="2"/>
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+              </svg>
+            </span>
+            <input type="email" id="forgot-email" class="form-control" placeholder="doctor@hospital.com" required>
+          </div>
+        </div>
+        <button type="submit" class="btn-auth-submit" id="btn-submit-forgot">
+          <span>Send Recovery Passkey</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: Live Simulated HMS Dashboard (Post-Login Experience) -->
+  <div class="modal-overlay" id="modal-dashboard-preview" role="dialog" aria-modal="true" aria-labelledby="modal-dash-title">
+    <div class="modal-card" style="max-width: 680px;">
+      <button type="button" class="modal-close-btn" id="btn-close-dash" aria-label="Close modal">✕</button>
+      
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 1.25rem; margin-bottom: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <div style="width: 44px; height: 44px; border-radius: 12px; background: #e0e7ff; display: grid; place-items: center; font-size: 1.4rem;" id="dash-avatar">
+            👨‍⚕️
+          </div>
+          <div>
+            <h3 id="modal-dash-title" style="font-size: 1.2rem; font-weight: 700; color: var(--text-main);" id="dash-user-name">
+              Welcome, Dr. Sarah Mitchell!
+            </h3>
+            <p style="font-size: 0.85rem; color: var(--emerald-600); font-weight: 600;" id="dash-user-role">
+              Active Session: Chief of Surgery & OPD
+            </p>
+          </div>
+        </div>
+        <span class="badge-pill-light">
+          <span class="live-dot" style="margin-right: 4px;"></span> Online
+        </span>
+      </div>
+
+      <!-- Quick KPI Cards in Modal -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem;">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem;">
+          <div style="font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Today's OPD Queue</div>
+          <div style="font-size: 1.5rem; font-weight: 800; color: #1e3a8a; margin-top: 0.25rem;">28 Patients</div>
+          <div style="font-size: 0.75rem; color: #10b981; margin-top: 0.2rem;">● 6 In Consultation</div>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem;">
+          <div style="font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase;">ICU Bed Occupancy</div>
+          <div style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem;">92% Full</div>
+          <div style="font-size: 0.75rem; color: #f59e0b; margin-top: 0.2rem;">2 Critical Beds Free</div>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem;">
+          <div style="font-size: 0.75rem; color: #64748b; font-weight: 600; text-transform: uppercase;">Pending Labs</div>
+          <div style="font-size: 1.5rem; font-weight: 800; color: #6366f1; margin-top: 0.25rem;">14 Reports</div>
+          <div style="font-size: 0.75rem; color: #6366f1; margin-top: 0.2rem;">ABDM Auto-Syncing</div>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons -->
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+        <a href="index.html" class="btn-secondary" style="font-size: 0.88rem; padding: 0.7rem 1.25rem;">
+          Return to Landing Page
+        </a>
+        <button type="button" class="btn-primary" id="btn-dash-action" style="font-size: 0.88rem; padding: 0.7rem 1.25rem;">
+          <span>Open Full HMS Workspace</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script src="js/auth.js"></script>
+</body>
+</html>
