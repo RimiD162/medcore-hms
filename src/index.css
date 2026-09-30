@@ -1,0 +1,222 @@
+/* ==========================================================================
+   MedCore HMS - Enterprise Design System & Styles
+   ========================================================================== */
+
+:root {
+  /* Color Palette */
+  --bg-main: #FAF9F6;
+  --bg-surface: #FFFFFF;
+  --bg-subtle: #F6F4EE;
+  --bg-card: #F7F5F0;
+  --bg-card-hover: #F2EFE7;
+  --bg-tag: #EFEAE0;
+  
+  /* Bronze / Ochre Theme Colors */
+  --primary-ochre: #8C6218;
+  --primary-ochre-hover: #755010;
+  --primary-ochre-light: #F4EEE2;
+  --primary-ochre-border: #D8C39F;
+  --primary-gold: #9C7223;
+  --primary-gradient: linear-gradient(135deg, #8C6218 0%, #A57722 100%);
+  
+  /* Neutral Typography Colors */
+  --text-primary: #191816;
+  --text-secondary: #58564F;
+  --text-muted: #7E7C73;
+  --text-light: #A3A199;
+  
+  /* Borders & Dividers */
+  --border-light: #EBE7DF;
+  --border-medium: #DDD7CA;
+  --border-focus: #8C6218;
+  
+  /* Status Colors */
+  --success-bg: #EBF7EE;
+  --success-text: #1E6B37;
+  --success-border: #B7E4C7;
+  --info-bg: #EDF4FF;
+  --info-text: #1D5494;
+  --warning-bg: #FEF6E9;
+  --warning-text: #965B0A;
+  
+  /* Typography */
+  --font-serif: 'Newsreader', 'Playfair Display', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  
+  /* Shadows & Radius */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-pill: 9999px;
+  
+  --shadow-sm: 0 2px 8px rgba(28, 25, 20, 0.04);
+  --shadow-md: 0 8px 24px -4px rgba(28, 25, 20, 0.07);
+  --shadow-lg: 0 16px 40px -8px rgba(28, 25, 20, 0.1);
+  --shadow-xl: 0 24px 60px -12px rgba(140, 98, 24, 0.12);
+  --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Base Container */
+.medcore-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+@media (max-width: 768px) {
+  .medcore-container {
+    padding: 0 20px;
+  }
+}
+
+/* Typography Helpers */
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+.font-sans {
+  font-family: var(--font-sans);
+}
+
+/* Button Component Styles */
+.btn-primary-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: var(--primary-ochre);
+  color: #FFFFFF;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 11px 26px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--primary-ochre);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(140, 98, 24, 0.2);
+}
+
+.btn-primary-pill:hover {
+  background-color: var(--primary-ochre-hover);
+  border-color: var(--primary-ochre-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(140, 98, 24, 0.28);
+}
+
+.btn-primary-pill:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(140, 98, 24, 0.2);
+}
+
+.btn-outline-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 11px 26px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-medium);
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-outline-pill:hover {
+  background-color: var(--bg-card);
+  border-color: var(--text-primary);
+  transform: translateY(-1px);
+}
+
+.btn-outline-pill:active {
+  transform: translateY(0);
+}
+
+/* Clean Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D9D4C7;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-ochre);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseSubtle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.03); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Modal Overlay */
+.medcore-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(20, 18, 14, 0.55);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.medcore-modal-card {
+  background: #FFFFFF;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-xl);
+  width: 100%;
+  max-width: 620px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
