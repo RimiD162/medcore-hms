@@ -1,0 +1,14 @@
+{
+  "name": "medcore-hms-backend",
+  "version": "1.0.0",
+  "description": "MedCore HMS - Enterprise Hospital Management System API",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+  },
+  "keywords": ["hospital", "hms", "healthcare"],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
