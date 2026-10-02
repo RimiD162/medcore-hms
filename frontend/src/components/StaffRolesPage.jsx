@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import Logo from './Logo';
 import RoleGrid from './RoleGrid';
-import FeatureRibbon from './FeatureRibbon';
 import WorkspaceModal from './WorkspaceModal';
-import { ArrowLeft, LogIn, ShieldCheck } from 'lucide-react';
+import { rolesData } from '../data/rolesData';
+import { ArrowLeft } from 'lucide-react';
 
 export const StaffRolesPage = ({ onBackToHome, onOpenAuth, onShowToast }) => {
   const [activeWorkspaceRole, setActiveWorkspaceRole] = useState(null);
@@ -13,80 +13,51 @@ export const StaffRolesPage = ({ onBackToHome, onOpenAuth, onShowToast }) => {
   };
 
   return (
-    <div className="staff-page-wrapper">
-      {/* Background Architectural Layers */}
-      <div className="hospital-bg-layer" />
-      <div className="hospital-bg-overlay" />
-
-      {/* Atmospheric Glow Orbs */}
-      <div className="glow-orb glow-orb-top" />
-      <div className="glow-orb glow-orb-left" />
-      <div className="glow-orb glow-orb-right" />
-
-      {/* Top Navbar */}
-      <header className="staff-top-nav">
-        <div className="staff-top-nav-inner">
+    <div className="portal-page-wrapper">
+      {/* 1. Fixed Top Navbar */}
+      <header className="portal-navbar">
+        <div className="portal-navbar-inner">
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
             <button
-              className="btn-back-gateway"
+              className="portal-back-btn"
               onClick={onBackToHome}
-              title="Return to Portal Gateway"
+              title="Return to Main Portal"
             >
               <ArrowLeft size={16} />
-              <span>Portal Home</span>
+              <span>Back to Home</span>
             </button>
             <Logo />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="portal-header-actions">
             <button
-              className="btn-sign-in"
+              className="portal-btn-signin"
               onClick={() => onOpenAuth('signin')}
             >
               Sign In
-            </button>
-            <button
-              className="btn-get-started"
-              onClick={() => onOpenAuth('register')}
-            >
-              Get Started
             </button>
           </div>
         </div>
       </header>
 
-      {/* Main Staff Roles Content */}
-      <main className="main-content">
-        {/* Staff Hero Title */}
-        <section className="staff-hero-section">
-          <h1 className="staff-hero-title">
-            One System for Every Step<br />
-            of <span className="highlight-text">Hospital Care.</span>
+      {/* 2. Main Portal Container */}
+      <main className="portal-container">
+        {/* Clean Page Title Header */}
+        <section className="staff-header-section">
+          <h1 className="staff-header-title">
+            Select Your <span className="teal-highlight">Role</span>
           </h1>
-          <p className="staff-hero-desc">
-            Connect clinical teams, hospital operations, pharmacy, laboratory and billing in one secure platform.
+
+          <p className="staff-header-subtitle">
+            Choose your dedicated workspace below to manage clinical tasks, patient records, prescriptions, diagnostics and billing.
           </p>
         </section>
 
-        {/* 6 Role Cards Grid */}
-        <RoleGrid onOpenWorkspace={handleOpenWorkspace} />
-
-        {/* Bottom Feature Ribbon */}
-        <FeatureRibbon />
-
-        {/* Footer */}
-        <footer className="site-footer" style={{ marginTop: '40px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <Logo size={22} />
-            <span style={{ fontSize: '0.82rem', color: '#64748b' }}>
-              &copy; {new Date().getFullYear()} MedCore HMS Inc. Hospital Staff Operations Terminal.
-            </span>
-          </div>
-          <div style={{ fontSize: '0.82rem', color: '#00d2b4', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <ShieldCheck size={16} />
-            <span>256-Bit Encrypted Healthcare Node</span>
-          </div>
-        </footer>
+        {/* 3. 6 Role Cards Grid */}
+        <RoleGrid
+          roles={rolesData}
+          onOpenWorkspace={handleOpenWorkspace}
+        />
       </main>
 
       {/* Role Workspace Simulation Modal */}

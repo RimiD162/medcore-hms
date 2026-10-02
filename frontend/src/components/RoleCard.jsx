@@ -23,56 +23,84 @@ export const RoleCard = ({ role, onOpenWorkspace }) => {
 
   return (
     <div
-      className="role-card"
+      className="staff-role-card"
       style={{
-        '--card-accent': role.accentColor,
-        '--card-glow': role.glowColor,
-        '--card-border': role.borderColor,
-        '--btn-bg': role.buttonBg,
+        '--role-accent': role.accentColor,
+        '--role-badge-bg': role.badgeBg,
+        '--role-badge-color': role.badgeColor,
+        '--role-border': role.borderColor,
       }}
       onClick={() => onOpenWorkspace(role)}
     >
-      {/* Top Photorealistic Image Container */}
-      <div className="role-card-image-wrap">
+      {/* Top Photorealistic Human Image Container */}
+      <div className="staff-card-img-wrap">
         <img
           src={role.image}
-          alt={role.title}
-          className="role-card-img"
+          alt={`MedCore HMS ${role.title}`}
+          className="staff-card-img"
           loading="lazy"
         />
-        <div className="role-card-gradient-overlay" />
-      </div>
-
-      {/* Card Content */}
-      <div className="role-card-content">
-        {/* Floating Role Badge */}
-        <div
-          className="role-icon-badge"
-          style={{
-            backgroundColor: role.badgeBg,
-            borderColor: role.accentColor,
-          }}
-        >
-          <IconComponent size={22} color="#ffffff" strokeWidth={2.2} />
+        
+        {/* Category Pill Tag */}
+        <div className="staff-card-category-badge">
+          <span>{role.categoryLabel || role.category}</span>
         </div>
 
-        {/* Role Title */}
-        <h3 className="role-card-title">{role.title}</h3>
+        {/* Live Active Metric Pill */}
+        {role.activeMetric && (
+          <div className="staff-card-metric-pill">
+            <span className="staff-metric-dot" />
+            <span>{role.activeMetric}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Card Content Body */}
+      <div className="staff-card-body">
+        {/* Role Header: Icon Badge & Title */}
+        <div className="staff-card-header">
+          <div
+            className="staff-role-icon-box"
+            style={{
+              backgroundColor: role.badgeBg,
+              color: role.badgeColor || role.accentColor,
+            }}
+          >
+            <IconComponent size={18} strokeWidth={2.4} />
+          </div>
+          <div className="staff-card-title-wrap">
+            <h3 className="staff-card-title">{role.title}</h3>
+            <span className="staff-card-department">{role.department}</span>
+          </div>
+        </div>
 
         {/* Role Description */}
-        <p className="role-card-desc">{role.subtitle}</p>
+        <p className="staff-card-desc">{role.subtitle}</p>
+
+        {/* Feature Tags List */}
+        {role.tags && role.tags.length > 0 && (
+          <div className="staff-card-tags">
+            {role.tags.slice(0, 3).map((tag, idx) => (
+              <span key={idx} className="staff-tag-pill">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Action Button */}
-        <button
-          className="role-btn-action"
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpenWorkspace(role);
-          }}
-        >
-          <span>Open Workspace</span>
-          <ArrowRight size={15} />
-        </button>
+        <div className="staff-card-footer">
+          <button
+            className="staff-btn-workspace"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenWorkspace(role);
+            }}
+          >
+            <span>Enter Workspace</span>
+            <ArrowRight size={14} />
+          </button>
+        </div>
       </div>
     </div>
   );
