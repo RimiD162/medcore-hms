@@ -128,4 +128,22 @@ export const Textarea = React.forwardRef(({
   );
 });
 
-export default { FormField, Input, Select, Textarea };
+export const InputField = ({ label, error, required, helperText, id, ...inputProps }) => (
+  <FormField label={label} error={error} required={required} helperText={helperText} id={id}>
+    <Input id={id} error={error} {...inputProps} />
+  </FormField>
+);
+
+export const SelectField = ({ label, error, required, helperText, id, ...selectProps }) => (
+  <FormField label={label} error={error} required={required} helperText={helperText} id={id}>
+    <Select id={id} error={error} {...selectProps} />
+  </FormField>
+);
+
+export const TextareaField = ({ label, error, required, helperText, id, ...textareaProps }) => (
+  <FormField label={label} error={error} required={required} helperText={helperText} id={id}>
+    <Textarea id={id} error={error} {...textareaProps} />
+  </FormField>
+);
+
+export default { FormField, Input, Select, Textarea, InputField, SelectField, TextareaField };

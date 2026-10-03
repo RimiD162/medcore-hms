@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Calendar,
@@ -16,6 +16,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Stethoscope,
+  Activity,
+  BedDouble,
+  HeartPulse,
 } from 'lucide-react';
 import Logo from '../Logo';
 
@@ -33,20 +36,50 @@ const doctorNavItems = [
   { path: '/app/doctor/availability', label: 'Weekly Schedule', icon: Clock },
 ];
 
+const nurseNavItems = [
+  { path: '/app/nurse', label: 'Dashboard', icon: LayoutDashboard, exact: true },
+  { path: '/app/nurse/patients', label: 'Assigned Patients', icon: Users },
+  { path: '/app/nurse/vitals', label: 'Vital Monitoring', icon: Activity },
+  { path: '/app/nurse/nursing-notes', label: 'Nursing Notes', icon: ClipboardList },
+  { path: '/app/nurse/medication-administration', label: 'Medication Admin (e-MAR)', icon: Pill },
+  { path: '/app/nurse/admissions', label: 'Inpatient Admissions', icon: FileText },
+  { path: '/app/nurse/bed-assignment', label: 'Bed Allocation Grid', icon: BedDouble },
+  { path: '/app/nurse/notifications', label: 'Notifications', icon: Bell, hasBadge: true },
+  { path: '/app/nurse/profile', label: 'Nurse Profile', icon: User },
+];
+
 export const Sidebar = ({
   collapsed = false,
   onToggleCollapse,
   isMobileOpen = false,
   onCloseMobile,
-  unreadNotifications = 3,
-  doctor = {
-    name: 'Dr. Sarah Chen',
-    specialization: 'Cardiologist',
-    department: 'OPD-102',
-    avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200',
-  },
+  unreadNotifications = 0,
+  user = null,
+  role = 'DOCTOR', // 'DOCTOR' | 'NURSE'
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isNurse = role === 'NURSE' || location.pathname.startsWith('/app/nurse');
+  const navItems = isNurse ? nurseNavItems : doctorNavItems;
+  const workspaceTitle = isNurse ? 'Nurse Station' : 'Doctor Workspace';
+  const profileRoute = isNurse ? '/app/nurse/profile' : '/app/doctor/profile';
+
+  const defaultUser = isNurse
+    ? {
+        name: 'Nurse Sarah Jenkins, RN',
+        specialization: 'Senior Ward Charge Nurse',
+        department: 'Ward 3B',
+        avatarUrl: 'https://images.unsplash.com/photo-1594824813624-9b28a883907c?auto=format&fit=crop&q=80&w=200',
+      }
+    : {
+        name: 'Dr. Sarah Chen',
+        specialization: 'Cardiologist',
+        department: 'OPD-102',
+        avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200',
+      };
+
+  const currentUser = user || defaultUser;
 
   return (
     <>
@@ -64,7 +97,11 @@ export const Sidebar = ({
             </div>
           ) : (
             <div className="med-sidebar-logo-collapsed">
-              <Stethoscope size={24} color="#00d2b4" />
+              {isNurse ? (
+                <HeartPulse size={24} color="#00d2b4" />
+              ) : (
+                <Stethoscope size={24} color="#00d2b4" />
+              )}
             </div>
           )}
 
@@ -79,14 +116,14 @@ export const Sidebar = ({
           </button>
         </div>
 
-        {/* Doctor Workspace Navigation */}
+        {/* Workspace Navigation */}
         <div className="med-sidebar-nav-section">
           {!collapsed && (
-            <span className="med-sidebar-group-title">Doctor Workspace</span>
+            <span className="med-sidebar-group-title">{workspaceTitle}</span>
           )}
 
           <nav className="med-sidebar-nav">
-            {doctorNavItems.map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon;
               return (
                 <NavLink
@@ -112,22 +149,22 @@ export const Sidebar = ({
           </nav>
         </div>
 
-        {/* Doctor Profile Footer */}
+        {/* User Profile Footer */}
         <div className="med-sidebar-footer">
           <div
             className="med-sidebar-user-card"
-            onClick={() => navigate('/app/doctor/profile')}
+            onClick={() => navigate(profileRoute)}
             title="View Profile"
           >
             <img
-              src={doctor.avatarUrl || '/images/doctor.jpg'}
-              alt={doctor.name}
+              src={currentUser.avatarUrl || '/images/doctor.jpg'}
+              alt={currentUser.name}
               className="med-sidebar-avatar"
             />
             {!collapsed && (
               <div className="med-sidebar-user-info">
-                <span className="med-sidebar-user-name">{doctor.name}</span>
-                <span className="med-sidebar-user-role">{doctor.specialization}</span>
+                <span className="med-sidebar-user-name">{currentUser.name}</span>
+                <span className="med-sidebar-user-role">{currentUser.specialization || currentUser.department}</span>
               </div>
             )}
           </div>

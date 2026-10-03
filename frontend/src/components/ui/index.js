@@ -5,5 +5,5 @@ export { StatCard } from './StatCard';
 export { DataTable } from './DataTable';
 export { Tabs } from './Tabs';
 export { Modal, ConfirmationDialog } from './Modal';
-export { FormField, Input, Select, Textarea } from './FormFields';
+export { FormField, Input, Select, Textarea, InputField, SelectField, TextareaField } from './FormFields';
 export { Skeleton, Spinner, LoadingState, EmptyState, ErrorState } from './Feedback';

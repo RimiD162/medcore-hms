@@ -22,6 +22,18 @@ import DoctorNotificationsPage from '../pages/doctor/DoctorNotificationsPage';
 import DoctorProfilePage from '../pages/doctor/DoctorProfilePage';
 import DoctorAvailabilityPage from '../pages/doctor/DoctorAvailabilityPage';
 
+// Nurse Pages
+import NurseDashboardPage from '../pages/nurse/NurseDashboardPage';
+import NurseAssignedPatientsPage from '../pages/nurse/NurseAssignedPatientsPage';
+import NursePatientDetailPage from '../pages/nurse/NursePatientDetailPage';
+import NurseVitalMonitoringPage from '../pages/nurse/NurseVitalMonitoringPage';
+import NurseNursingNotesPage from '../pages/nurse/NurseNursingNotesPage';
+import NurseMedicationAdministrationPage from '../pages/nurse/NurseMedicationAdministrationPage';
+import NurseAdmissionsPage from '../pages/nurse/NurseAdmissionsPage';
+import NurseBedAssignmentPage from '../pages/nurse/NurseBedAssignmentPage';
+import NurseNotificationsPage from '../pages/nurse/NurseNotificationsPage';
+import NurseProfilePage from '../pages/nurse/NurseProfilePage';
+
 export const AppRouter = () => {
   const [theme, setTheme] = useState('light');
   const [showPatientModal, setShowPatientModal] = useState(false);
@@ -53,6 +65,9 @@ export const AppRouter = () => {
     if (role.id === 'doctor') {
       navigate('/app/doctor');
       showToast(`Welcome Dr. Sarah Chen! Logged in as ${role.title}.`);
+    } else if (role.id === 'nurse') {
+      navigate('/app/nurse');
+      showToast(`Welcome Nurse Sarah Jenkins, RN! Logged in as ${role.title}.`);
     } else {
       navigate('/staff-roles');
       showToast(`Logged in as ${role.title} (${role.subtitle})`);
@@ -107,7 +122,6 @@ export const AppRouter = () => {
             />
           }
         >
-          {/* Default to dashboard */}
           <Route index element={<DoctorDashboardPage />} />
           <Route path="dashboard" element={<DoctorDashboardPage />} />
           <Route path="appointments" element={<DoctorAppointmentsPage />} />
@@ -122,6 +136,32 @@ export const AppRouter = () => {
           <Route path="notifications" element={<DoctorNotificationsPage />} />
           <Route path="profile" element={<DoctorProfilePage />} />
           <Route path="availability" element={<DoctorAvailabilityPage />} />
+        </Route>
+
+        {/* 4. Nurse Module Shell & Nested Routes */}
+        <Route
+          path="/app/nurse"
+          element={
+            <AppLayout
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              onShowToast={showToast}
+            />
+          }
+        >
+          <Route index element={<NurseDashboardPage />} />
+          <Route path="dashboard" element={<NurseDashboardPage />} />
+          <Route path="patients" element={<NurseAssignedPatientsPage />} />
+          <Route path="patients/:patientId" element={<NursePatientDetailPage />} />
+          <Route path="vitals" element={<NurseVitalMonitoringPage />} />
+          <Route path="nursing-notes" element={<NurseNursingNotesPage />} />
+          <Route path="medication-administration" element={<NurseMedicationAdministrationPage />} />
+          <Route path="medications" element={<Navigate to="/app/nurse/medication-administration" replace />} />
+          <Route path="admissions" element={<NurseAdmissionsPage />} />
+          <Route path="bed-assignment" element={<NurseBedAssignmentPage />} />
+          <Route path="beds" element={<Navigate to="/app/nurse/bed-assignment" replace />} />
+          <Route path="notifications" element={<NurseNotificationsPage />} />
+          <Route path="profile" element={<NurseProfilePage />} />
         </Route>
 
         {/* Fallback */}

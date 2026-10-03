@@ -4,9 +4,50 @@ const ApiResponse = require('../utils/ApiResponse');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'medcore_jwt_secret_key_clinical_doctor_2026';
 
+// In-memory cache for demo users to avoid roundtrip DB calls on every request
+let cachedDemoDoctor = null;
+let cachedDemoNurse = null;
+
+async function initDemoCache() {
+  try {
+    const nurse = await prisma.user.findFirst({
+      where: { role: 'NURSE', isActive: true },
+      include: { nurseProfile: true },
+    });
+    const doctor = await prisma.user.findFirst({
+      where: { role: 'DOCTOR', isActive: true },
+      include: { doctorProfile: true },
+    });
+
+    if (nurse) {
+      cachedDemoNurse = {
+        id: nurse.id,
+        email: nurse.email,
+        fullName: nurse.fullName,
+        role: nurse.role,
+        nurseId: nurse.nurseProfile?.id,
+        nurseProfile: nurse.nurseProfile,
+      };
+    }
+
+    if (doctor) {
+      cachedDemoDoctor = {
+        id: doctor.id,
+        email: doctor.email,
+        fullName: doctor.fullName,
+        role: doctor.role,
+        doctorId: doctor.doctorProfile?.id,
+        doctorProfile: doctor.doctorProfile,
+      };
+    }
+  } catch (err) {
+    console.warn('⚠️ Warning: Demo auth cache initialization deferred:', err.message);
+  }
+}
+
 /**
  * Authentication Middleware
- * Decodes JWT token and attaches user & doctorProfile to req.user
+ * Decodes JWT token and attaches user, doctorProfile, or nurseProfile to req.user
  */
 async function authMiddleware(req, res, next) {
   try {
@@ -19,27 +60,34 @@ async function authMiddleware(req, res, next) {
     }
 
     // ── Placeholder / Demo Fallback ──
-    // If no token provided in development/demo, default to primary doctor Dr. Sarah Chen
+    // In demo mode or if no token provided, resolve role context based on route prefix or token
     // TODO Phase 1: connect real authenticated user in production
-    if (!token || token === 'demo-doctor-token') {
-      const defaultDoctor = await prisma.user.findFirst({
-        where: { role: 'DOCTOR', isActive: true },
-        include: { doctorProfile: true },
-      });
+    const isNurseContext = token === 'demo-nurse-token' || req.originalUrl?.includes('/api/v1/nurse') || req.baseUrl?.includes('/nurse');
 
-      if (!defaultDoctor) {
+    if (!token || token === 'demo-doctor-token' || token === 'demo-nurse-token') {
+      if (isNurseContext) {
+        if (!cachedDemoNurse) {
+          await initDemoCache();
+        }
+
+        if (!cachedDemoNurse) {
+          return ApiResponse.unauthorized(res, 'No active nurse found for workspace session');
+        }
+
+        req.user = { ...cachedDemoNurse };
+        return next();
+      }
+
+      // Default to Doctor
+      if (!cachedDemoDoctor) {
+        await initDemoCache();
+      }
+
+      if (!cachedDemoDoctor) {
         return ApiResponse.unauthorized(res, 'No active doctor found for workspace session');
       }
 
-      req.user = {
-        id: defaultDoctor.id,
-        email: defaultDoctor.email,
-        fullName: defaultDoctor.fullName,
-        role: defaultDoctor.role,
-        doctorId: defaultDoctor.doctorProfile?.id,
-        doctorProfile: defaultDoctor.doctorProfile,
-      };
-
+      req.user = { ...cachedDemoDoctor };
       return next();
     }
 
@@ -47,7 +95,7 @@ async function authMiddleware(req, res, next) {
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId || decoded.id },
-      include: { doctorProfile: true },
+      include: { doctorProfile: true, nurseProfile: true },
     });
 
     if (!user || !user.isActive) {
@@ -61,6 +109,8 @@ async function authMiddleware(req, res, next) {
       role: user.role,
       doctorId: user.doctorProfile?.id,
       doctorProfile: user.doctorProfile,
+      nurseId: user.nurseProfile?.id,
+      nurseProfile: user.nurseProfile,
     };
 
     next();
@@ -74,7 +124,7 @@ async function authMiddleware(req, res, next) {
 
 /**
  * Role-based Authorization Middleware
- * Enforces specified role (e.g., 'DOCTOR')
+ * Enforces specified role (e.g., 'DOCTOR', 'NURSE')
  */
 function requireRole(requiredRole) {
   return (req, res, next) => {
@@ -95,7 +145,6 @@ function requireRole(requiredRole) {
 
 /**
  * Doctor-Patient Relationship & Resource Authorization Guard
- * Ensures doctor only accesses patients with whom they have an appointment or clinical record
  */
 async function authorizePatientAccess(req, res, next) {
   try {
@@ -106,7 +155,6 @@ async function authorizePatientAccess(req, res, next) {
       return next();
     }
 
-    // Verify if patient exists
     const patient = await prisma.patient.findUnique({
       where: { id: patientId },
     });
@@ -115,7 +163,6 @@ async function authorizePatientAccess(req, res, next) {
       return ApiResponse.notFound(res, 'Patient record not found');
     }
 
-    // Check if doctor has an appointment or consultation or medical record with this patient
     const relationshipExists = await prisma.appointment.findFirst({
       where: {
         patientId,
@@ -124,7 +171,6 @@ async function authorizePatientAccess(req, res, next) {
     });
 
     if (!relationshipExists && req.user.role !== 'ADMIN') {
-      // Also check medical records or consultations
       const recordExists = await prisma.medicalRecord.findFirst({
         where: { patientId, doctorId },
       });
@@ -144,8 +190,70 @@ async function authorizePatientAccess(req, res, next) {
   }
 }
 
+/**
+ * Access Control Service Function
+ * Checks whether a nurse is actively assigned to a patient
+ */
+async function canNurseAccessPatient(nurseId, patientId) {
+  if (!nurseId || !patientId) return false;
+
+  const assignment = await prisma.nurseAssignment.findFirst({
+    where: {
+      nurseId,
+      patientId,
+      isActive: true,
+    },
+  });
+
+  return !!assignment;
+}
+
+/**
+ * Nurse-Patient Assignment Authorization Guard
+ * Ensures nurse only accesses assigned patients
+ */
+async function authorizeNursePatientAccess(req, res, next) {
+  try {
+    const patientId = req.params.patientId || req.body.patientId || req.query.patientId;
+    const nurseId = req.user?.nurseId;
+
+    if (!patientId) {
+      return next();
+    }
+
+    if (!nurseId) {
+      return ApiResponse.forbidden(res, 'Access denied: Active nurse profile required');
+    }
+
+    const patient = await prisma.patient.findUnique({
+      where: { id: patientId },
+    });
+
+    if (!patient) {
+      return ApiResponse.notFound(res, 'Patient record not found');
+    }
+
+    const isAssigned = await canNurseAccessPatient(nurseId, patientId);
+
+    if (!isAssigned && req.user.role !== 'ADMIN') {
+      return ApiResponse.forbidden(
+        res,
+        'Unauthorized: You are not assigned to this patient'
+      );
+    }
+
+    req.patient = patient;
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   authMiddleware,
   requireRole,
   authorizePatientAccess,
+  authorizeNursePatientAccess,
+  canNurseAccessPatient,
+  initDemoCache,
 };

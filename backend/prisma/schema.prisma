@@ -57,6 +57,7 @@ model User {
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
   doctorProfile DoctorProfile?
+  nurseProfile  NurseProfile?
   notifications Notification[]
   auditLogs     AuditLog[]
 
@@ -111,6 +112,49 @@ model DoctorAvailability {
   @@map("doctor_availabilities")
 }
 
+// ── Nurse Profile & Assignments ───────────────────────────────
+model NurseProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique @map("user_id")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department     String   @default("Inpatient Wards & Triage")
+  ward           String   @default("Ward 3B - General Medical")
+  shift          String   @default("Day (08:00 - 16:00)") // Day, Evening, Night, Rotating
+  status         String   @default("On Duty") // On Duty, Off Duty, On Break
+  licenseNumber  String   @map("license_number")
+  qualifications String[] @default([])
+  bio            String?
+  phone          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  assignments               NurseAssignment[]
+  vitalSigns                VitalSign[]
+  nursingNotes              NursingNote[]
+  medicationAdministrations MedicationAdministration[]
+
+  @@map("nurse_profiles")
+}
+
+model NurseAssignment {
+  id           String       @id @default(uuid())
+  nurseId      String       @map("nurse_id")
+  nurse        NurseProfile @relation(fields: [nurseId], references: [id], onDelete: Cascade)
+  patientId    String       @map("patient_id")
+  patient      Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  ward         String?
+  assignedDate DateTime     @default(now()) @map("assigned_date")
+  shift        String?
+  isActive     Boolean      @default(true) @map("is_active")
+  notes        String?
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  @@index([nurseId, isActive])
+  @@index([patientId, isActive])
+  @@map("nurse_assignments")
+}
+
 // ── Patient Model ─────────────────────────────────────────────
 model Patient {
   id                String    @id @default(uuid())
@@ -133,13 +177,19 @@ model Patient {
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
-  appointments      Appointment[]
-  consultations     Consultation[]
-  medicalRecords    MedicalRecord[]
-  prescriptions     Prescription[]
-  labReports        LabReport[]
-  documents         Document[]
-  followUps         FollowUp[]
+  appointments              Appointment[]
+  consultations             Consultation[]
+  medicalRecords            MedicalRecord[]
+  prescriptions             Prescription[]
+  labReports                LabReport[]
+  documents                 Document[]
+  followUps                 FollowUp[]
+  nurseAssignments          NurseAssignment[]
+  vitalSigns                VitalSign[]
+  nursingNotes              NursingNote[]
+  medicationAdministrations MedicationAdministration[]
+  admissions                Admission[]
+  beds                      Bed[]
 
   @@index([patientIdNumber])
   @@index([phone])
@@ -276,7 +326,147 @@ model PrescriptionItem {
   instructions   String?      // "After food with warm water"
   createdAt      DateTime     @default(now()) @map("created_at")
 
+  medicationAdministrations MedicationAdministration[]
+
   @@map("prescription_items")
+}
+
+// ── Vital Signs Monitoring (Nurse) ───────────────────────────
+model VitalSign {
+  id               String       @id @default(uuid())
+  patientId        String       @map("patient_id")
+  patient          Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  nurseId          String       @map("nurse_id")
+  nurse            NurseProfile @relation(fields: [nurseId], references: [id], onDelete: Cascade)
+  bloodPressure    String       @map("blood_pressure") // e.g. "120/80"
+  systolic         Int?
+  diastolic        Int?
+  temperature      Float        // in Fahrenheit, e.g. 98.6
+  pulse            Int          // bpm
+  respiratoryRate  Int          @map("respiratory_rate") // breaths/min
+  oxygenSaturation Int          @map("oxygen_saturation") // SpO2 %
+  weight           Float?       // in kg
+  height           Float?       // in cm
+  observation      String?
+  isFlagged        Boolean      @default(false) @map("is_flagged")
+  flagReason       String?      @map("flag_reason")
+  recordedAt       DateTime     @default(now()) @map("recorded_at")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  @@index([patientId, recordedAt])
+  @@index([nurseId])
+  @@map("vital_signs")
+}
+
+// ── Nursing Notes ────────────────────────────────────────────
+model NursingNote {
+  id              String       @id @default(uuid())
+  patientId       String       @map("patient_id")
+  patient         Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  nurseId         String       @map("nurse_id")
+  nurse           NurseProfile @relation(fields: [nurseId], references: [id], onDelete: Cascade)
+  shift           String?
+  observation     String       // Clinical observation
+  careProvided    String       @map("care_provided") // Interventions and nursing care given
+  patientResponse String       @map("patient_response") // How patient responded
+  additionalNotes String?      @map("additional_notes")
+  isFlagged       Boolean      @default(false) @map("is_flagged")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  @@index([patientId, createdAt])
+  @@index([nurseId])
+  @@map("nursing_notes")
+}
+
+// ── Medication Administration (e-MAR) ────────────────────────
+enum MedAdminStatus {
+  SCHEDULED
+  DUE
+  ADMINISTERED
+  HELD
+  MISSED
+  CANCELLED
+}
+
+model MedicationAdministration {
+  id                 String            @id @default(uuid())
+  patientId          String            @map("patient_id")
+  patient            Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  nurseId            String?           @map("nurse_id")
+  nurse              NurseProfile?     @relation(fields: [nurseId], references: [id], onDelete: SetNull)
+  prescriptionItemId String?           @map("prescription_item_id")
+  prescriptionItem   PrescriptionItem? @relation(fields: [prescriptionItemId], references: [id], onDelete: SetNull)
+  medicineName       String            @map("medicine_name")
+  dosage             String            // "500mg"
+  route              String            @default("Oral") // Oral, IV, IM, Inhalation, Topical
+  frequency          String?           // "Twice Daily"
+  scheduledAt        DateTime          @map("scheduled_at")
+  administeredAt     DateTime?         @map("administered_at")
+  status             MedAdminStatus    @default(SCHEDULED)
+  reason             String?           // Required for HELD and MISSED
+  notes              String?
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+
+  @@index([patientId, scheduledAt])
+  @@index([status, scheduledAt])
+  @@index([nurseId])
+  @@map("medication_administrations")
+}
+
+// ── Inpatient Admissions (Nurse View) ────────────────────────
+enum AdmissionStatus {
+  PENDING
+  ADMITTED
+  TRANSFERRED
+  DISCHARGED
+}
+
+model Admission {
+  id                 String          @id @default(uuid())
+  admissionNumber    String          @unique @map("admission_number")
+  patientId          String          @map("patient_id")
+  patient            Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  admittedDate       DateTime        @default(now()) @map("admitted_date")
+  dischargeDate      DateTime?       @map("discharge_date")
+  ward               String          // e.g. "Ward 3B - General Medical"
+  roomNumber         String          @map("room_number") // "Room 204"
+  bedNumber          String          @map("bed_number")  // "Bed 2"
+  status             AdmissionStatus @default(ADMITTED)
+  attendingDoctor    String?         @map("attending_doctor") // "Dr. Sarah Chen"
+  admittingDiagnosis String?         @map("admitting_diagnosis")
+  notes              String?
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
+
+  @@index([patientId])
+  @@index([status])
+  @@map("admissions")
+}
+
+// ── Beds & Wards (Nurse Read-Only View) ──────────────────────
+enum BedStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  MAINTENANCE
+}
+
+model Bed {
+  id         String    @id @default(uuid())
+  bedNumber  String    @map("bed_number")
+  roomNumber String    @map("room_number")
+  ward       String
+  status     BedStatus @default(AVAILABLE)
+  patientId  String?   @map("patient_id")
+  patient    Patient?  @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  @@unique([ward, roomNumber, bedNumber])
+  @@map("beds")
 }
 
 // ── Lab Reports & Documents ───────────────────────────────────
