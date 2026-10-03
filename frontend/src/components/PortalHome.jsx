@@ -15,6 +15,8 @@ export const PortalHome = ({
     <div className="portal-page-wrapper" data-theme={theme}>
       {/* Header */}
       <PortalHeader
+        theme={theme}
+        onToggleTheme={onToggleTheme}
         onOpenAuth={onOpenAuth}
       />
 

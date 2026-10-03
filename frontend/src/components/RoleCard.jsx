@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Stethoscope,
   HeartPulse,
@@ -19,7 +20,16 @@ const iconMap = {
 };
 
 export const RoleCard = ({ role, onOpenWorkspace }) => {
+  const navigate = useNavigate();
   const IconComponent = iconMap[role.iconName] || Stethoscope;
+
+  const handleClick = () => {
+    if (role.id === 'doctor') {
+      navigate('/app/doctor');
+    } else {
+      onOpenWorkspace(role);
+    }
+  };
 
   return (
     <div
@@ -30,7 +40,7 @@ export const RoleCard = ({ role, onOpenWorkspace }) => {
         '--role-badge-color': role.badgeColor,
         '--role-border': role.borderColor,
       }}
-      onClick={() => onOpenWorkspace(role)}
+      onClick={handleClick}
     >
       {/* Top Photorealistic Human Image Container */}
       <div className="staff-card-img-wrap">

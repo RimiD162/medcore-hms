@@ -71,9 +71,37 @@ export const WorkspaceModal = ({ selectedRole, onClose, onShowToast }) => {
               </p>
             </div>
           </div>
-          <button className="modal-close-btn" onClick={onClose} aria-label="Close modal">
-            <X size={20} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {currentRole.id === 'doctor' && (
+              <button
+                type="button"
+                className="modal-action-pill"
+                style={{
+                  background: 'linear-gradient(135deg, #00a88f, #00d2b4)',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+                onClick={() => {
+                  onClose();
+                  window.location.href = '/app/doctor';
+                }}
+              >
+                <Stethoscope size={16} />
+                <span>Launch Live Doctor EMR</span>
+                <ArrowRight size={14} />
+              </button>
+            )}
+            <button className="modal-close-btn" onClick={onClose} aria-label="Close modal">
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Modal Body */}
