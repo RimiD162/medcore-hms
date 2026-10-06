@@ -56,10 +56,16 @@ model User {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  doctorProfile DoctorProfile?
-  nurseProfile  NurseProfile?
-  notifications Notification[]
-  auditLogs     AuditLog[]
+  doctorProfile          DoctorProfile?
+  nurseProfile           NurseProfile?
+  receptionistProfile    ReceptionistProfile?
+  notifications          Notification[]
+  auditLogs              AuditLog[]
+  receivedPayments       Payment[]               @relation("PaymentReceiver")
+  createdInvoices        Invoice[]               @relation("InvoiceCreator")
+  bookedAppointments     Appointment[]           @relation("AppointmentBooker")
+  cancelledAppointments  Appointment[]           @relation("AppointmentCanceller")
+  emergencyRegistrations EmergencyRegistration[] @relation("EmergencyRegistrar")
 
   @@index([email])
   @@index([hospitalId])
@@ -155,12 +161,29 @@ model NurseAssignment {
   @@map("nurse_assignments")
 }
 
+// ── Receptionist Profile ──────────────────────────────────────
+model ReceptionistProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department  String   @default("Front Desk & OPD Registration")
+  shift       String   @default("Morning (08:00 - 16:00)") // Morning, Evening, Night
+  status      String   @default("On Duty") // On Duty, Off Duty, On Break
+  employeeId  String?  @map("employee_id")
+  phone       String?
+  bio         String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("receptionist_profiles")
+}
+
 // ── Patient Model ─────────────────────────────────────────────
 model Patient {
   id                String    @id @default(uuid())
   hospitalId        String?   @map("hospital_id")
   hospital          Hospital? @relation(fields: [hospitalId], references: [id], onDelete: SetNull)
-  patientIdNumber   String    @unique @map("patient_id_number") // e.g. "MED-P-1001"
+  patientIdNumber   String    @unique @map("patient_id_number") // e.g. "MED-P-1001" or "MC-2026-000123"
   fullName          String    @map("full_name")
   dateOfBirth       DateTime? @map("date_of_birth")
   age               Int?
@@ -174,6 +197,8 @@ model Patient {
   allergies         String[]  @default([])
   chronicConditions String[]  @default([]) @map("chronic_conditions")
   status            String    @default("Active") // Active, Inpatient, Discharged
+  registrationDate  DateTime  @default(now()) @map("registration_date")
+  registrationSource String   @default("Standard") @map("registration_source") // Standard, Emergency, Referral
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
@@ -190,9 +215,14 @@ model Patient {
   medicationAdministrations MedicationAdministration[]
   admissions                Admission[]
   beds                      Bed[]
+  invoices                  Invoice[]
+  payments                  Payment[]
+  emergencyRecords          EmergencyRegistration[]
 
   @@index([patientIdNumber])
   @@index([phone])
+  @@index([fullName])
+  @@index([createdAt])
   @@map("patients")
 }
 
@@ -218,15 +248,22 @@ model Appointment {
   status            AppointmentStatus @default(SCHEDULED)
   reason            String?
   cancelReason      String?           @map("cancel_reason")
+  cancelledAt       DateTime?         @map("cancelled_at")
+  cancelledById     String?           @map("cancelled_by_id")
+  cancelledBy       User?             @relation("AppointmentCanceller", fields: [cancelledById], references: [id], onDelete: SetNull)
+  bookedById        String?           @map("booked_by_id")
+  bookedBy          User?             @relation("AppointmentBooker", fields: [bookedById], references: [id], onDelete: SetNull)
   isCheckedIn       Boolean           @default(false) @map("is_checked_in") // Supports "Waiting" display
   checkedInAt       DateTime?         @map("checked_in_at")
   createdAt         DateTime          @default(now()) @map("created_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")
 
   consultation      Consultation?
+  invoice           Invoice?
 
   @@index([doctorId, appointmentDate, status])
   @@index([patientId])
+  @@index([appointmentDate, status])
   @@map("appointments")
 }
 
@@ -416,7 +453,7 @@ model MedicationAdministration {
   @@map("medication_administrations")
 }
 
-// ── Inpatient Admissions (Nurse View) ────────────────────────
+// ── Inpatient Admissions ──────────────────────────────────────
 enum AdmissionStatus {
   PENDING
   ADMITTED
@@ -446,7 +483,7 @@ model Admission {
   @@map("admissions")
 }
 
-// ── Beds & Wards (Nurse Read-Only View) ──────────────────────
+// ── Beds & Wards ──────────────────────────────────────────────
 enum BedStatus {
   AVAILABLE
   OCCUPIED
@@ -467,6 +504,148 @@ model Bed {
 
   @@unique([ward, roomNumber, bedNumber])
   @@map("beds")
+}
+
+// ── Service Catalog (Shared Hospital Billing Catalog) ─────────
+model ServiceCatalog {
+  id          String        @id @default(uuid())
+  code        String        @unique // e.g. "SRV-CONS-GEN", "SRV-CONS-SPEC"
+  name        String
+  category    String        // "Consultation", "Diagnostic", "Procedure", "Emergency", "Ward & Bed"
+  price       Decimal       @db.Decimal(10, 2)
+  description String?
+  isActive    Boolean       @default(true) @map("is_active")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  invoiceItems InvoiceItem[]
+
+  @@map("service_catalog")
+}
+
+// ── Invoices & Line Items (Shared Hospital Billing System) ────
+enum InvoiceStatus {
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  CANCELLED
+}
+
+model Invoice {
+  id                String        @id @default(uuid())
+  invoiceNumber     String        @unique @map("invoice_number") // e.g. "INV-2026-001"
+  patientId         String        @map("patient_id")
+  patient           Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  appointmentId     String?       @unique @map("appointment_id")
+  appointment       Appointment?  @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  createdById       String?       @map("created_by_id")
+  createdBy         User?         @relation("InvoiceCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  issueDate         DateTime      @default(now()) @map("issue_date")
+  dueDate           DateTime?     @map("due_date")
+  subtotal          Decimal       @db.Decimal(10, 2)
+  taxAmount         Decimal       @default(0.00) @map("tax_amount") @db.Decimal(10, 2)
+  discountAmount    Decimal       @default(0.00) @map("discount_amount") @db.Decimal(10, 2)
+  totalAmount       Decimal       @map("total_amount") @db.Decimal(10, 2)
+  paidAmount        Decimal       @default(0.00) @map("paid_amount") @db.Decimal(10, 2)
+  outstandingAmount Decimal       @map("outstanding_amount") @db.Decimal(10, 2)
+  status            InvoiceStatus @default(PENDING)
+  notes             String?
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  items             InvoiceItem[]
+  payments          Payment[]
+
+  @@index([patientId])
+  @@index([status])
+  @@index([issueDate])
+  @@map("invoices")
+}
+
+model InvoiceItem {
+  id               String          @id @default(uuid())
+  invoiceId        String          @map("invoice_id")
+  invoice          Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  serviceCatalogId String?         @map("service_catalog_id")
+  serviceCatalog   ServiceCatalog? @relation(fields: [serviceCatalogId], references: [id], onDelete: SetNull)
+  serviceName      String          @map("service_name")
+  category         String          @default("General")
+  unitPrice        Decimal         @map("unit_price") @db.Decimal(10, 2)
+  quantity         Int             @default(1)
+  totalPrice       Decimal         @map("total_price") @db.Decimal(10, 2)
+  createdAt        DateTime        @default(now()) @map("created_at")
+
+  @@index([invoiceId])
+  @@map("invoice_items")
+}
+
+// ── Payments ──────────────────────────────────────────────────
+enum PaymentMethod {
+  CASH
+  CARD
+  UPI
+  BANK_TRANSFER
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  paymentNumber   String        @unique @map("payment_number") // e.g. "PAY-2026-001"
+  invoiceId       String        @map("invoice_id")
+  invoice         Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  patientId       String        @map("patient_id")
+  patient         Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  amount          Decimal       @db.Decimal(10, 2)
+  paymentMethod   PaymentMethod @default(CASH) @map("payment_method")
+  referenceNumber String?       @map("reference_number") // Transaction ID / Reference (No raw card data)
+  paidAt          DateTime      @default(now()) @map("paid_at")
+  receivedById    String?       @map("received_by_id")
+  receivedBy      User?         @relation("PaymentReceiver", fields: [receivedById], references: [id], onDelete: SetNull)
+  notes           String?
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  @@index([invoiceId])
+  @@index([patientId])
+  @@index([paidAt])
+  @@map("payments")
+}
+
+// ── Emergency Registrations (Front Desk Fast Path) ────────────
+enum EmergencyPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum EmergencyStatus {
+  TRIAGED
+  ADMITTED
+  IN_TREATMENT
+  DISCHARGED
+  TRANSFERRED
+}
+
+model EmergencyRegistration {
+  id               String            @id @default(uuid())
+  emergencyNumber  String            @unique @map("emergency_number") // e.g. "EMG-2026-001"
+  patientId        String            @map("patient_id")
+  patient          Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  arrivedAt        DateTime          @default(now()) @map("arrived_at")
+  priority         EmergencyPriority @default(HIGH)
+  reason           String
+  status           EmergencyStatus   @default(TRIAGED)
+  triageNotes      String?           @map("triage_notes")
+  assignedDoctorId String?           @map("assigned_doctor_id")
+  assignedBedId    String?           @map("assigned_bed_id")
+  registeredById   String?           @map("registered_by_id")
+  registeredBy     User?             @relation("EmergencyRegistrar", fields: [registeredById], references: [id], onDelete: SetNull)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  @@index([patientId])
+  @@index([priority, status])
+  @@index([arrivedAt])
+  @@map("emergency_registrations")
 }
 
 // ── Lab Reports & Documents ───────────────────────────────────
@@ -553,7 +732,7 @@ model Notification {
   type       String   @default("INFO") // INFO, URGENT, APPOINTMENT, LAB_RESULT
   isRead     Boolean  @default(false) @map("is_read")
   readAt     DateTime? @map("read_at")
-  entityType String?  @map("entity_type") // Appointment, LabReport, Consultation
+  entityType String?  @map("entity_type") // Appointment, LabReport, Consultation, Invoice, Payment
   entityId   String?  @map("entity_id")
   createdAt  DateTime @default(now()) @map("created_at")
 

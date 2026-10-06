@@ -26,6 +26,10 @@ export const RoleCard = ({ role, onOpenWorkspace }) => {
   const handleClick = () => {
     if (role.id === 'doctor') {
       navigate('/app/doctor');
+    } else if (role.id === 'nurse') {
+      navigate('/app/nurse');
+    } else if (role.id === 'receptionist') {
+      navigate('/app/receptionist');
     } else {
       onOpenWorkspace(role);
     }

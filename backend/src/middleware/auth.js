@@ -7,9 +7,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'medcore_jwt_secret_key_clinical_do
 // In-memory cache for demo users to avoid roundtrip DB calls on every request
 let cachedDemoDoctor = null;
 let cachedDemoNurse = null;
+let cachedDemoReceptionist = null;
 
 async function initDemoCache() {
   try {
+    const receptionist = await prisma.user.findFirst({
+      where: { role: 'RECEPTIONIST', isActive: true },
+      include: { receptionistProfile: true },
+    });
     const nurse = await prisma.user.findFirst({
       where: { role: 'NURSE', isActive: true },
       include: { nurseProfile: true },
@@ -18,6 +23,17 @@ async function initDemoCache() {
       where: { role: 'DOCTOR', isActive: true },
       include: { doctorProfile: true },
     });
+
+    if (receptionist) {
+      cachedDemoReceptionist = {
+        id: receptionist.id,
+        email: receptionist.email,
+        fullName: receptionist.fullName,
+        role: receptionist.role,
+        receptionistId: receptionist.receptionistProfile?.id,
+        receptionistProfile: receptionist.receptionistProfile,
+      };
+    }
 
     if (nurse) {
       cachedDemoNurse = {
@@ -47,7 +63,7 @@ async function initDemoCache() {
 
 /**
  * Authentication Middleware
- * Decodes JWT token and attaches user, doctorProfile, or nurseProfile to req.user
+ * Decodes JWT token and attaches user, doctorProfile, nurseProfile, or receptionistProfile to req.user
  */
 async function authMiddleware(req, res, next) {
   try {
@@ -62,9 +78,23 @@ async function authMiddleware(req, res, next) {
     // ── Placeholder / Demo Fallback ──
     // In demo mode or if no token provided, resolve role context based on route prefix or token
     // TODO Phase 1: connect real authenticated user in production
+    const isReceptionistContext = token === 'demo-receptionist-token' || req.originalUrl?.includes('/api/v1/receptionist') || req.baseUrl?.includes('/receptionist');
     const isNurseContext = token === 'demo-nurse-token' || req.originalUrl?.includes('/api/v1/nurse') || req.baseUrl?.includes('/nurse');
 
-    if (!token || token === 'demo-doctor-token' || token === 'demo-nurse-token') {
+    if (!token || token === 'demo-doctor-token' || token === 'demo-nurse-token' || token === 'demo-receptionist-token') {
+      if (isReceptionistContext) {
+        if (!cachedDemoReceptionist) {
+          await initDemoCache();
+        }
+
+        if (!cachedDemoReceptionist) {
+          return ApiResponse.unauthorized(res, 'No active receptionist found for workspace session');
+        }
+
+        req.user = { ...cachedDemoReceptionist };
+        return next();
+      }
+
       if (isNurseContext) {
         if (!cachedDemoNurse) {
           await initDemoCache();
@@ -95,7 +125,7 @@ async function authMiddleware(req, res, next) {
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId || decoded.id },
-      include: { doctorProfile: true, nurseProfile: true },
+      include: { doctorProfile: true, nurseProfile: true, receptionistProfile: true },
     });
 
     if (!user || !user.isActive) {
@@ -111,6 +141,8 @@ async function authMiddleware(req, res, next) {
       doctorProfile: user.doctorProfile,
       nurseId: user.nurseProfile?.id,
       nurseProfile: user.nurseProfile,
+      receptionistId: user.receptionistProfile?.id,
+      receptionistProfile: user.receptionistProfile,
     };
 
     next();
@@ -124,7 +156,7 @@ async function authMiddleware(req, res, next) {
 
 /**
  * Role-based Authorization Middleware
- * Enforces specified role (e.g., 'DOCTOR', 'NURSE')
+ * Enforces specified role (e.g., 'DOCTOR', 'NURSE', 'RECEPTIONIST')
  */
 function requireRole(requiredRole) {
   return (req, res, next) => {

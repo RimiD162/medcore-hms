@@ -34,6 +34,22 @@ import NurseBedAssignmentPage from '../pages/nurse/NurseBedAssignmentPage';
 import NurseNotificationsPage from '../pages/nurse/NurseNotificationsPage';
 import NurseProfilePage from '../pages/nurse/NurseProfilePage';
 
+// Receptionist Pages
+import ReceptionistDashboardPage from '../pages/receptionist/ReceptionistDashboardPage';
+import ReceptionistPatientsPage from '../pages/receptionist/ReceptionistPatientsPage';
+import ReceptionistPatientRegisterPage from '../pages/receptionist/ReceptionistPatientRegisterPage';
+import ReceptionistPatientDetailPage from '../pages/receptionist/ReceptionistPatientDetailPage';
+import ReceptionistAppointmentsPage from '../pages/receptionist/ReceptionistAppointmentsPage';
+import ReceptionistAppointmentBookPage from '../pages/receptionist/ReceptionistAppointmentBookPage';
+import ReceptionistCalendarPage from '../pages/receptionist/ReceptionistCalendarPage';
+import ReceptionistAdmissionsPage from '../pages/receptionist/ReceptionistAdmissionsPage';
+import ReceptionistEmergencyPage from '../pages/receptionist/ReceptionistEmergencyPage';
+import ReceptionistBillingPage from '../pages/receptionist/ReceptionistBillingPage';
+import ReceptionistInvoicesPage from '../pages/receptionist/ReceptionistInvoicesPage';
+import ReceptionistPaymentsPage from '../pages/receptionist/ReceptionistPaymentsPage';
+import ReceptionistNotificationsPage from '../pages/receptionist/ReceptionistNotificationsPage';
+import ReceptionistProfilePage from '../pages/receptionist/ReceptionistProfilePage';
+
 export const AppRouter = () => {
   const [theme, setTheme] = useState('light');
   const [showPatientModal, setShowPatientModal] = useState(false);
@@ -68,6 +84,9 @@ export const AppRouter = () => {
     } else if (role.id === 'nurse') {
       navigate('/app/nurse');
       showToast(`Welcome Nurse Sarah Jenkins, RN! Logged in as ${role.title}.`);
+    } else if (role.id === 'receptionist') {
+      navigate('/app/receptionist');
+      showToast(`Welcome Rachel Adams! Logged in as ${role.title}.`);
     } else {
       navigate('/staff-roles');
       showToast(`Logged in as ${role.title} (${role.subtitle})`);
@@ -162,6 +181,34 @@ export const AppRouter = () => {
           <Route path="beds" element={<Navigate to="/app/nurse/bed-assignment" replace />} />
           <Route path="notifications" element={<NurseNotificationsPage />} />
           <Route path="profile" element={<NurseProfilePage />} />
+        </Route>
+
+        {/* 5. Receptionist Module Shell & Nested Routes */}
+        <Route
+          path="/app/receptionist"
+          element={
+            <AppLayout
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              onShowToast={showToast}
+            />
+          }
+        >
+          <Route index element={<ReceptionistDashboardPage />} />
+          <Route path="dashboard" element={<ReceptionistDashboardPage />} />
+          <Route path="patients" element={<ReceptionistPatientsPage />} />
+          <Route path="patients/register" element={<ReceptionistPatientRegisterPage />} />
+          <Route path="patients/:patientId" element={<ReceptionistPatientDetailPage />} />
+          <Route path="appointments" element={<ReceptionistAppointmentsPage />} />
+          <Route path="appointments/book" element={<ReceptionistAppointmentBookPage />} />
+          <Route path="calendar" element={<ReceptionistCalendarPage />} />
+          <Route path="billing" element={<ReceptionistBillingPage />} />
+          <Route path="invoices" element={<ReceptionistInvoicesPage />} />
+          <Route path="payments" element={<ReceptionistPaymentsPage />} />
+          <Route path="admissions" element={<ReceptionistAdmissionsPage />} />
+          <Route path="emergency" element={<ReceptionistEmergencyPage />} />
+          <Route path="notifications" element={<ReceptionistNotificationsPage />} />
+          <Route path="profile" element={<ReceptionistProfilePage />} />
         </Route>
 
         {/* Fallback */}

@@ -3,7 +3,9 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Calendar,
+  CalendarPlus,
   Users,
+  UserPlus,
   ClipboardList,
   FileText,
   Pill,
@@ -19,6 +21,11 @@ import {
   Activity,
   BedDouble,
   HeartPulse,
+  Receipt,
+  CreditCard,
+  Wallet,
+  AlertCircle,
+  Building2,
 } from 'lucide-react';
 import Logo from '../Logo';
 
@@ -48,6 +55,22 @@ const nurseNavItems = [
   { path: '/app/nurse/profile', label: 'Nurse Profile', icon: User },
 ];
 
+const receptionistNavItems = [
+  { path: '/app/receptionist', label: 'Front Desk Overview', icon: LayoutDashboard, exact: true },
+  { path: '/app/receptionist/patients', label: 'Patient Directory', icon: Users, exact: true },
+  { path: '/app/receptionist/patients/register', label: 'Register Patient', icon: UserPlus },
+  { path: '/app/receptionist/appointments', label: 'Appointments Queue', icon: Calendar, exact: true },
+  { path: '/app/receptionist/appointments/book', label: 'Book Appointment', icon: CalendarPlus },
+  { path: '/app/receptionist/calendar', label: 'Schedule Calendar', icon: Clock },
+  { path: '/app/receptionist/billing', label: 'Create Invoice', icon: CreditCard },
+  { path: '/app/receptionist/invoices', label: 'Invoices & Billing', icon: Receipt },
+  { path: '/app/receptionist/payments', label: 'Payment Registry', icon: Wallet },
+  { path: '/app/receptionist/admissions', label: 'Ward Bed Matrix', icon: BedDouble },
+  { path: '/app/receptionist/emergency', label: 'Emergency Intake', icon: AlertCircle },
+  { path: '/app/receptionist/notifications', label: 'Notifications', icon: Bell, hasBadge: true },
+  { path: '/app/receptionist/profile', label: 'Staff Profile', icon: User },
+];
+
 export const Sidebar = ({
   collapsed = false,
   onToggleCollapse,
@@ -55,29 +78,52 @@ export const Sidebar = ({
   onCloseMobile,
   unreadNotifications = 0,
   user = null,
-  role = 'DOCTOR', // 'DOCTOR' | 'NURSE'
+  role = 'DOCTOR', // 'DOCTOR' | 'NURSE' | 'RECEPTIONIST'
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const isReceptionist = role === 'RECEPTIONIST' || location.pathname.startsWith('/app/receptionist');
   const isNurse = role === 'NURSE' || location.pathname.startsWith('/app/nurse');
-  const navItems = isNurse ? nurseNavItems : doctorNavItems;
-  const workspaceTitle = isNurse ? 'Nurse Station' : 'Doctor Workspace';
-  const profileRoute = isNurse ? '/app/nurse/profile' : '/app/doctor/profile';
+  
+  const navItems = isReceptionist 
+    ? receptionistNavItems 
+    : isNurse 
+      ? nurseNavItems 
+      : doctorNavItems;
 
-  const defaultUser = isNurse
+  const workspaceTitle = isReceptionist 
+    ? 'Reception Desk' 
+    : isNurse 
+      ? 'Nurse Station' 
+      : 'Doctor Workspace';
+
+  const profileRoute = isReceptionist 
+    ? '/app/receptionist/profile' 
+    : isNurse 
+      ? '/app/nurse/profile' 
+      : '/app/doctor/profile';
+
+  const defaultUser = isReceptionist
     ? {
-        name: 'Nurse Sarah Jenkins, RN',
-        specialization: 'Senior Ward Charge Nurse',
-        department: 'Ward 3B',
-        avatarUrl: 'https://images.unsplash.com/photo-1594824813624-9b28a883907c?auto=format&fit=crop&q=80&w=200',
+        name: 'Rachel Adams',
+        specialization: 'Lead Front Desk Receptionist',
+        department: 'Main Lobby / Admissions',
+        avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
       }
-    : {
-        name: 'Dr. Sarah Chen',
-        specialization: 'Cardiologist',
-        department: 'OPD-102',
-        avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200',
-      };
+    : isNurse
+      ? {
+          name: 'Nurse Sarah Jenkins, RN',
+          specialization: 'Senior Ward Charge Nurse',
+          department: 'Ward 3B',
+          avatarUrl: 'https://images.unsplash.com/photo-1594824813624-9b28a883907c?auto=format&fit=crop&q=80&w=200',
+        }
+      : {
+          name: 'Dr. Sarah Chen',
+          specialization: 'Cardiologist',
+          department: 'OPD-102',
+          avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200',
+        };
 
   const currentUser = user || defaultUser;
 
@@ -97,7 +143,9 @@ export const Sidebar = ({
             </div>
           ) : (
             <div className="med-sidebar-logo-collapsed">
-              {isNurse ? (
+              {isReceptionist ? (
+                <Building2 size={24} color="#00d2b4" />
+              ) : isNurse ? (
                 <HeartPulse size={24} color="#00d2b4" />
               ) : (
                 <Stethoscope size={24} color="#00d2b4" />
