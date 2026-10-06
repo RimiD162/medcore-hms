@@ -25,11 +25,17 @@ export const RoleCard = ({ role, onOpenWorkspace }) => {
 
   const handleClick = () => {
     if (role.id === 'doctor') {
+      localStorage.setItem('medcore_auth_token', 'demo-doctor-token');
       navigate('/app/doctor');
     } else if (role.id === 'nurse') {
+      localStorage.setItem('medcore_auth_token', 'demo-nurse-token');
       navigate('/app/nurse');
     } else if (role.id === 'receptionist') {
+      localStorage.setItem('medcore_auth_token', 'demo-receptionist-token');
       navigate('/app/receptionist');
+    } else if (role.id === 'pharmacist') {
+      localStorage.setItem('medcore_auth_token', 'demo-pharmacist-token');
+      navigate('/app/pharmacist');
     } else {
       onOpenWorkspace(role);
     }

@@ -1,46 +1,63 @@
 require('dotenv').config();
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../src/config/prisma');
 const bcrypt = require('bcryptjs');
 
-const prisma = new PrismaClient();
-
 async function main() {
-  console.log('🌱 Starting MedCore HMS Seed Data Generation (Full Multi-Role Ecosystem: Doctor + Nurse + Reception Desk)...');
+  console.log('🌱 Starting MedCore HMS Seed Data Generation (Full Multi-Role Ecosystem: Doctor + Nurse + Receptionist + Pharmacist)...');
 
-  // 1. Fast truncate of all tables
+  // 1. Fast truncate of all tables with retry
   console.log('Cleaning existing database tables...');
-  await prisma.$executeRawUnsafe(`
-    TRUNCATE TABLE 
-      emergency_registrations,
-      payments,
-      invoice_items,
-      invoices,
-      service_catalog,
-      receptionist_profiles,
-      medication_administrations,
-      nursing_notes,
-      vital_signs,
-      nurse_assignments,
-      beds,
-      admissions,
-      nurse_profiles,
-      prescription_items,
-      documents,
-      lab_reports,
-      prescriptions,
-      medical_records,
-      consultations,
-      appointments,
-      follow_ups,
-      doctor_availabilities,
-      doctor_profiles,
-      notifications,
-      audit_logs,
-      patients,
-      users,
-      hospitals
-    CASCADE;
-  `);
+  let truncateSuccess = false;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await prisma.$executeRawUnsafe(`
+        TRUNCATE TABLE 
+          dispensing_items,
+          dispensings,
+          stock_receipt_items,
+          stock_receipts,
+          stock_transactions,
+          medicine_batches,
+          medicines,
+          pharmacist_profiles,
+          emergency_registrations,
+          payments,
+          invoice_items,
+          invoices,
+          service_catalog,
+          receptionist_profiles,
+          medication_administrations,
+          nursing_notes,
+          vital_signs,
+          nurse_assignments,
+          beds,
+          admissions,
+          nurse_profiles,
+          prescription_items,
+          documents,
+          lab_reports,
+          prescriptions,
+          medical_records,
+          consultations,
+          appointments,
+          follow_ups,
+          doctor_availabilities,
+          doctor_profiles,
+          notifications,
+          audit_logs,
+          patients,
+          users,
+          hospitals
+        CASCADE;
+      `);
+      truncateSuccess = true;
+      break;
+    } catch (err) {
+      console.warn(`Truncate attempt ${attempt}/3 failed: ${err.message}. Retrying in 1s...`);
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+  }
+  if (!truncateSuccess) throw new Error('Failed to truncate tables after 3 attempts');
   console.log('✅ Clean complete.');
 
   // 2. Hospital
@@ -60,6 +77,7 @@ async function main() {
   const doctorPasswordHash = await bcrypt.hash('Doctor@123', 10);
   const nursePasswordHash = await bcrypt.hash('Nurse@123', 10);
   const receptionistPasswordHash = await bcrypt.hash('Receptionist@123', 10);
+  const pharmacistPasswordHash = await bcrypt.hash('Pharmacist@123', 10);
 
   // 3. Receptionist User & Profile
   const receptionistUser = await prisma.user.create({
@@ -86,6 +104,35 @@ async function main() {
       employeeId: 'EMP-REC-301',
       phone: '+91 98999 11223',
       bio: 'Senior Patient Care Coordinator & Front Desk Supervisor with 6+ years in healthcare queue management and patient intake.',
+    },
+  });
+
+  // 3b. Pharmacist User & Profile
+  const pharmacistUser = await prisma.user.create({
+    data: {
+      hospitalId: hospital.id,
+      role: 'PHARMACIST',
+      fullName: 'Marcus Sterling, RPh',
+      email: 'pharmacist@medcore.health',
+      passwordHash: pharmacistPasswordHash,
+      phone: '+91 98111 55667',
+      employeeId: 'EMP-PHARM-401',
+      avatarUrl: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&q=80&w=300',
+      isActive: true,
+      isVerified: true,
+    },
+  });
+
+  const pharmacistProfile = await prisma.pharmacistProfile.create({
+    data: {
+      userId: pharmacistUser.id,
+      department: 'Central Pharmacy & Dispensary',
+      licenseNumber: 'RPH-2021-99881',
+      shift: 'Day (08:00 - 16:00)',
+      status: 'On Duty',
+      employeeId: 'EMP-PHARM-401',
+      phone: '+91 98111 55667',
+      bio: 'Chief Clinical Pharmacist with 8+ years specializing in hospital dispensary, batch inventory management, and prescription verification.',
     },
   });
 
@@ -1243,7 +1290,709 @@ async function main() {
     },
   });
 
-  // 16. 5 Front Desk / Receptionist Notifications
+  // ── 16. Pharmacy: Medicine Catalog (16 Realistic Formulations) ──
+  console.log('Seeding Pharmacy Catalog Medicines & Batches...');
+  const medicineData = [
+    {
+      medicineCode: 'MED-2026-001',
+      name: 'Amoxicillin 500mg',
+      genericName: 'Amoxicillin Trihydrate',
+      brandName: 'Amoxil / Moxikind',
+      category: 'Antibiotic',
+      manufacturer: 'GlaxoSmithKline Healthcare',
+      strength: '500mg',
+      dosageForm: 'Capsule',
+      route: 'Oral',
+      unit: 'Capsules',
+      sellingPrice: 12.50,
+      reorderLevel: 30,
+      status: 'Active',
+      description: 'Broad-spectrum beta-lactam antibiotic for bacterial infections including ENT, respiratory, and urinary tract.',
+    },
+    {
+      medicineCode: 'MED-2026-002',
+      name: 'Paracetamol 650mg',
+      genericName: 'Acetaminophen',
+      brandName: 'Calpol / Dolo 650',
+      category: 'Analgesic & Antipyretic',
+      manufacturer: 'Micro Labs Ltd',
+      strength: '650mg',
+      dosageForm: 'Tablet',
+      route: 'Oral',
+      unit: 'Tablets',
+      sellingPrice: 3.50,
+      reorderLevel: 50,
+      status: 'Active',
+      description: 'First-line antipyretic and mild-to-moderate analgesic for fever, headache, and body aches.',
+    },
+    {
+      medicineCode: 'MED-2026-003',
+      name: 'Azithromycin 500mg',
+      genericName: 'Azithromycin Dihydrate',
+      brandName: 'Zithromax / Azithral',
+      category: 'Antibiotic (Macrolide)',
+      manufacturer: 'Alembic Pharmaceuticals',
+      strength: '500mg',
+      dosageForm: 'Tablet',
+      route: 'Oral',
+      unit: 'Tablets',
+      sellingPrice: 18.00,
+      reorderLevel: 25,
+      status: 'Active',
+      description: 'Macrolide antibiotic for community-acquired pneumonia, acute bacterial sinusitis, and soft tissue infections.',
+    },
+    {
+      medicineCode: 'MED-2026-004',
+      name: 'Metformin 500mg',
+      genericName: 'Metformin Hydrochloride',
+      brandName: 'Glucophage / Glycomet',
+      category: 'Antidiabetic (Biguanide)',
+      manufacturer: 'USV Private Limited',
+      strength: '500mg',
+      dosageForm: 'Tablet',
+      route: 'Oral',
+      unit: 'Tablets',
+      sellingPrice: 6.00,
+      reorderLevel: 40,
+      status: 'Active',
+      description: 'First-choice oral antihyperglycemic for glycemic management in Type 2 Diabetes Mellitus.',
+    },
+    {
+      medicineCode: 'MED-2026-005',
+      name: 'Atorvastatin 20mg',
+      genericName: 'Atorvastatin Calcium',
+      brandName: 'Lipitor / Atorva',
+      category: 'Cardiovascular (Statin)',
+      manufacturer: 'Pfizer Global Health',
+      strength: '20mg',
+      dosageForm: 'Tablet',
+      route: 'Oral',
+      unit: 'Tablets',
+      sellingPrice: 14.50,
+      reorderLevel: 30,
+      status: 'Active',
+      description: 'HMG-CoA reductase inhibitor for lipid reduction, hypercholesterolemia, and cardiovascular risk reduction.',
+    },
+    {
+      medicineCode: 'MED-2026-006',
+      name: 'Amlodipine 5mg',
+      genericName: 'Amlodipine Besylate',
+      brandName: 'Norvasc / Amlong',
+      category: 'Antihypertensive (CCB)',
+      manufacturer: 'Cadila Healthcare',
+      strength: '5mg',
+      dosageForm: 'Tablet',
+      route: 'Oral',
+      unit: 'Tablets',
+      sellingPrice: 5.00,
+      reorderLevel: 25,
+      status: 'Active',
+      description: 'Dihydropyridine calcium channel blocker for systemic hypertension and chronic stable angina.',
+    },
+    {
+      medicineCode: 'MED-2026-007',
+      name: 'Omeprazole 20mg',
+      genericName: 'Omeprazole Magnesium',
+      brandName: 'Prilosec / Omez',
+      category: 'Gastrointestinal (PPI)',
+      manufacturer: 'Dr. Reddy\'s Laboratories',
+      strength: '20mg',
+      dosageForm: 'Capsule',
+      route: 'Oral',
+      unit: 'Capsules',
+      sellingPrice: 8.00,
+      reorderLevel: 30,
+      status: 'Active',
+      description: 'Proton pump inhibitor for gastroesophageal reflux disease (GERD) and peptic ulcer prophylaxis.',
+    },
+    {
+      medicineCode: 'MED-2026-008',
+      name: 'Pantoprazole 40mg',
+      genericName: 'Pantoprazole Sodium',
+      brandName: 'Protonix / Pan 40',
+      category: 'Gastrointestinal (PPI)',
+      manufacturer: 'Alkem Laboratories',
+      strength: '40mg',
+      dosageForm: 'Tablet',
+      route: 'Oral',
+      unit: 'Tablets',
+      sellingPrice: 9.50,
+      reorderLevel: 30,
+      status: 'Active',
+      description: 'Proton pump inhibitor indicated for erosive esophagitis and acid hypersecretion states.',
+    },
+    {
+      medicineCode: 'MED-2026-009',
+      name: 'Ceftriaxone 1g Injection',
+      genericName: 'Ceftriaxone Sodium Sterile',
+      brandName: 'Rocephin / Monocef',
+      category: 'Antibiotic (Cephalosporin)',
+      manufacturer: 'F. Hoffmann-La Roche Ltd',
+      strength: '1g',
+      dosageForm: 'Injection',
+      route: 'IV',
+      unit: 'Vials',
+      sellingPrice: 22.00,
+      reorderLevel: 20,
+      status: 'Active',
+      description: 'Third-generation cephalosporin for severe nosocomial infections, meningitis, and surgical prophylaxis.',
+    },
+    {
+      medicineCode: 'MED-2026-010',
+      name: 'Salbutamol Inhaler 100mcg',
+      genericName: 'Albuterol Sulfate',
+      brandName: 'Ventolin / Asthalin',
+      category: 'Respiratory (Bronchodilator)',
+      manufacturer: 'Cipla Respiratory',
+      strength: '100mcg/puff',
+      dosageForm: 'Inhaler',
+      route: 'Inhalation',
+      unit: 'Inhalers',
+      sellingPrice: 16.00,
+      reorderLevel: 15,
+      status: 'Active',
+      description: 'Short-acting beta-2 agonist for relief of acute bronchospasm in bronchial asthma and COPD.',
+    },
+    {
+      medicineCode: 'MED-2026-011',
+      name: 'Cetirizine 10mg',
+      genericName: 'Cetirizine Dihydrochloride',
+      brandName: 'Zyrtec / Cetzine',
+      category: 'Antihistamine',
+      manufacturer: 'Sun Pharma Industries',
+      strength: '10mg',
+      dosageForm: 'Tablet',
+      route: 'Oral',
+      unit: 'Tablets',
+      sellingPrice: 4.00,
+      reorderLevel: 25,
+      status: 'Active',
+      description: 'Second-generation H1 receptor antagonist for seasonal allergic rhinitis, urticaria, and pruritus.',
+    },
+    {
+      medicineCode: 'MED-2026-012',
+      name: 'Ibuprofen 400mg',
+      genericName: 'Ibuprofen',
+      brandName: 'Advil / Brufen',
+      category: 'NSAID',
+      manufacturer: 'Abbott Healthcare',
+      strength: '400mg',
+      dosageForm: 'Tablet',
+      route: 'Oral',
+      unit: 'Tablets',
+      sellingPrice: 5.50,
+      reorderLevel: 30,
+      status: 'Active',
+      description: 'Non-steroidal anti-inflammatory drug for post-traumatic pain, arthralgia, and dysmenorrhea.',
+    },
+    {
+      medicineCode: 'MED-2026-013',
+      name: 'Ciprofloxacin 500mg',
+      genericName: 'Ciprofloxacin Hydrochloride',
+      brandName: 'Cipro / Ciplox',
+      category: 'Antibiotic (Fluoroquinolone)',
+      manufacturer: 'Cipla Ltd',
+      strength: '500mg',
+      dosageForm: 'Tablet',
+      route: 'Oral',
+      unit: 'Tablets',
+      sellingPrice: 11.00,
+      reorderLevel: 20,
+      status: 'Active',
+      description: 'Fluoroquinolone antibiotic for complicated urinary tract and intra-abdominal infections.',
+    },
+    {
+      medicineCode: 'MED-2026-014',
+      name: 'Insulin Glargine 100IU/ml',
+      genericName: 'Insulin Glargine Recombinant',
+      brandName: 'Lantus Solostar',
+      category: 'Antidiabetic (Basal Insulin)',
+      manufacturer: 'Sanofi Aventis',
+      strength: '100IU/ml',
+      dosageForm: 'Injection',
+      route: 'Subcutaneous',
+      unit: 'Cartridges',
+      sellingPrice: 48.00,
+      reorderLevel: 10,
+      status: 'Active',
+      description: 'Recombinant 24-hour basal insulin analog for glycemic control in Type 1 & Type 2 Diabetes.',
+    },
+    {
+      medicineCode: 'MED-2026-015',
+      name: 'Ondansetron 4mg',
+      genericName: 'Ondansetron Hydrochloride',
+      brandName: 'Zofran / Emeset',
+      category: 'Antiemetic (5-HT3 Antagonist)',
+      manufacturer: 'GlaxoSmithKline',
+      strength: '4mg',
+      dosageForm: 'Tablet',
+      route: 'Oral',
+      unit: 'Tablets',
+      sellingPrice: 7.00,
+      reorderLevel: 20,
+      status: 'Active',
+      description: 'Selective 5-HT3 receptor antagonist for post-operative and chemotherapy-induced nausea and vomiting.',
+    },
+    {
+      medicineCode: 'MED-2026-016',
+      name: 'Montelukast 10mg',
+      genericName: 'Montelukast Sodium',
+      brandName: 'Singulair / Montair',
+      category: 'Respiratory (Leukotriene Inhibitor)',
+      manufacturer: 'Merck & Co.',
+      strength: '10mg',
+      dosageForm: 'Tablet',
+      route: 'Oral',
+      unit: 'Tablets',
+      sellingPrice: 13.50,
+      reorderLevel: 20,
+      status: 'Active',
+      description: 'Leukotriene receptor antagonist for prophylaxis and chronic management of bronchial asthma and allergic rhinitis.',
+    },
+  ];
+
+  const createdMedicines = [];
+  for (const m of medicineData) {
+    const med = await prisma.medicine.create({ data: m });
+    createdMedicines.push(med);
+  }
+
+  // ── 17. Batches & Opening Stock Transactions ──
+  // Date helpers for realistic expiry buckets
+  const expiryFresh1 = new Date(Date.now() + 380 * 86400000); // ~13 months out (2027)
+  const expiryFresh2 = new Date(Date.now() + 540 * 86400000); // ~18 months out (2027/2028)
+  const expiry30Days = new Date(Date.now() + 18 * 86400000);  // 18 days (30-day bucket)
+  const expiry60Days = new Date(Date.now() + 45 * 86400000);  // 45 days (60-day bucket)
+  const expiry90Days = new Date(Date.now() + 75 * 86400000);  // 75 days (90-day bucket)
+  const expiryExpired = new Date(Date.now() - 14 * 86400000); // 14 days ago (Expired)
+
+  const batchesPlan = [
+    // Med 0: Amoxicillin 500mg (2 batches: 1 fresh, 1 expiring in 60d)
+    { medIdx: 0, batchNo: 'BAT-2026-01A', qty: 150, cost: 7.50, expiry: expiryFresh1, status: 'Active' },
+    { medIdx: 0, batchNo: 'BAT-2025-08X', qty: 40, cost: 7.00, expiry: expiry60Days, status: 'Active' },
+    
+    // Med 1: Paracetamol 650mg (2 batches: 1 fresh, 1 near 30d expiry)
+    { medIdx: 1, batchNo: 'BAT-2026-02A', qty: 300, cost: 1.80, expiry: expiryFresh1, status: 'Active' },
+    { medIdx: 1, batchNo: 'BAT-2025-09P', qty: 80, cost: 1.50, expiry: expiry30Days, status: 'Active' },
+
+    // Med 2: Azithromycin 500mg (2 batches: 1 fresh, 1 expired)
+    { medIdx: 2, batchNo: 'BAT-2026-03A', qty: 90, cost: 11.00, expiry: expiryFresh2, status: 'Active' },
+    { medIdx: 2, batchNo: 'BAT-2024-11Z', qty: 25, cost: 10.50, expiry: expiryExpired, status: 'Expired' },
+
+    // Med 3: Metformin 500mg (2 batches)
+    { medIdx: 3, batchNo: 'BAT-2026-04A', qty: 200, cost: 3.20, expiry: expiryFresh1, status: 'Active' },
+    { medIdx: 3, batchNo: 'BAT-2025-10M', qty: 50, cost: 3.00, expiry: expiry90Days, status: 'Active' },
+
+    // Med 4: Atorvastatin 20mg (2 batches)
+    { medIdx: 4, batchNo: 'BAT-2026-05A', qty: 120, cost: 8.50, expiry: expiryFresh1, status: 'Active' },
+    { medIdx: 4, batchNo: 'BAT-2025-07L', qty: 35, cost: 8.00, expiry: expiry60Days, status: 'Active' },
+
+    // Med 5: Amlodipine 5mg (2 batches)
+    { medIdx: 5, batchNo: 'BAT-2026-06A', qty: 180, cost: 2.80, expiry: expiryFresh2, status: 'Active' },
+    { medIdx: 5, batchNo: 'BAT-2025-12A', qty: 45, cost: 2.50, expiry: expiry90Days, status: 'Active' },
+
+    // Med 6: Omeprazole 20mg (2 batches)
+    { medIdx: 6, batchNo: 'BAT-2026-07A', qty: 100, cost: 4.50, expiry: expiryFresh1, status: 'Active' },
+    { medIdx: 6, batchNo: 'BAT-2025-08O', qty: 30, cost: 4.20, expiry: expiry30Days, status: 'Active' },
+
+    // Med 7: Pantoprazole 40mg (2 batches)
+    { medIdx: 7, batchNo: 'BAT-2026-08A', qty: 160, cost: 5.50, expiry: expiryFresh1, status: 'Active' },
+    { medIdx: 7, batchNo: 'BAT-2025-11P', qty: 50, cost: 5.00, expiry: expiry90Days, status: 'Active' },
+
+    // Med 8: Ceftriaxone 1g Injection (Low stock test: 8 units available, reorder is 20)
+    { medIdx: 8, batchNo: 'BAT-2026-09A', qty: 8, cost: 14.00, expiry: expiryFresh1, status: 'Active' },
+
+    // Med 9: Salbutamol Inhaler (Low stock test: 5 units available, reorder is 15)
+    { medIdx: 9, batchNo: 'BAT-2026-10A', qty: 5, cost: 9.50, expiry: expiryFresh1, status: 'Active' },
+
+    // Med 10: Cetirizine 10mg (2 batches)
+    { medIdx: 10, batchNo: 'BAT-2026-11A', qty: 220, cost: 2.10, expiry: expiryFresh2, status: 'Active' },
+    { medIdx: 10, batchNo: 'BAT-2025-09C', qty: 40, cost: 2.00, expiry: expiry60Days, status: 'Active' },
+
+    // Med 11: Ibuprofen 400mg (Low stock test: 12 units available, reorder is 30)
+    { medIdx: 11, batchNo: 'BAT-2026-12A', qty: 12, cost: 3.10, expiry: expiryFresh1, status: 'Active' },
+
+    // Med 12: Ciprofloxacin 500mg (2 batches)
+    { medIdx: 12, batchNo: 'BAT-2026-13A', qty: 85, cost: 6.20, expiry: expiryFresh1, status: 'Active' },
+    { medIdx: 12, batchNo: 'BAT-2025-06C', qty: 20, cost: 6.00, expiry: expiry30Days, status: 'Active' },
+
+    // Med 13: Insulin Glargine (Low stock test: 4 units available, reorder is 10)
+    { medIdx: 13, batchNo: 'BAT-2026-14A', qty: 4, cost: 32.00, expiry: expiryFresh1, status: 'Active' },
+
+    // Med 14: Ondansetron 4mg (Low stock test: 7 units available, reorder is 20)
+    { medIdx: 14, batchNo: 'BAT-2026-15A', qty: 7, cost: 4.10, expiry: expiryFresh1, status: 'Active' },
+
+    // Med 15: Montelukast 10mg (2 batches)
+    { medIdx: 15, batchNo: 'BAT-2026-16A', qty: 110, cost: 8.00, expiry: expiryFresh2, status: 'Active' },
+    { medIdx: 15, batchNo: 'BAT-2025-10K', qty: 30, cost: 7.80, expiry: expiry90Days, status: 'Active' },
+  ];
+
+  const createdBatches = [];
+  let txnCounter = 1;
+
+  for (const b of batchesPlan) {
+    const med = createdMedicines[b.medIdx];
+    const batch = await prisma.medicineBatch.create({
+      data: {
+        medicineId: med.id,
+        batchNumber: b.batchNo,
+        manufacturer: med.manufacturer,
+        supplier: 'Apollo Pharma Distribution Ltd',
+        receivedDate: new Date(Date.now() - 30 * 86400000),
+        expiryDate: b.expiry,
+        quantityReceived: b.qty,
+        quantityAvailable: b.qty, // Matches initial receipt
+        purchaseCost: b.cost,
+        sellingPrice: med.sellingPrice,
+        status: b.status,
+      },
+    });
+    createdBatches.push(batch);
+
+    // Write opening RECEIPT ledger transaction so quantity == sum(ledger)
+    const txnNumber = `TXN-2026-${String(txnCounter++).padStart(4, '0')}`;
+    await prisma.stockTransaction.create({
+      data: {
+        transactionNumber: txnNumber,
+        medicineId: med.id,
+        batchId: batch.id,
+        quantityChange: b.qty,
+        type: 'RECEIPT',
+        reason: 'Initial opening stock intake from verified distributor',
+        balanceAfter: b.qty,
+        performedById: pharmacistUser.id,
+        createdAt: new Date(Date.now() - 30 * 86400000),
+      },
+    });
+  }
+
+  // ── 18. Prescriptions: Doctor E-Prescriptions & Items ──
+  console.log('Seeding Prescriptions with mapped catalog items...');
+  const prescriptionsData = [
+    // Rx 1: For Robert Sterling (Dr. Sarah Chen) - Pending Dispense
+    {
+      prescriptionNumber: 'RX-2026-001',
+      doctorId: doctorProfile1.id,
+      patientId: createdPatients[0].id,
+      notes: 'Post-CABG cardiovascular secondary prophylaxis. Monitor BP weekly.',
+      dispensingStatus: 'PENDING',
+      items: [
+        {
+          medicineId: createdMedicines[4].id, // Atorvastatin 20mg
+          medicineName: 'Atorvastatin 20mg',
+          dosage: '20mg',
+          frequency: '0-0-1 (Once at Night)',
+          duration: '30 Days',
+          quantityPrescribed: 30,
+          quantityDispensed: 0,
+          instructions: 'Take 1 tablet daily after dinner',
+        },
+        {
+          medicineId: createdMedicines[5].id, // Amlodipine 5mg
+          medicineName: 'Amlodipine 5mg',
+          dosage: '5mg',
+          frequency: '1-0-0 (Once in Morning)',
+          duration: '30 Days',
+          quantityPrescribed: 30,
+          quantityDispensed: 0,
+          instructions: 'Take in the morning with water before food',
+        },
+      ],
+    },
+    // Rx 2: For Elena Rostova (Dr. Sarah Chen) - Pending Dispense
+    {
+      prescriptionNumber: 'RX-2026-002',
+      doctorId: doctorProfile1.id,
+      patientId: createdPatients[1].id,
+      notes: 'Upper respiratory tract infection. Complete 5-day antibiotic course.',
+      dispensingStatus: 'PENDING',
+      items: [
+        {
+          medicineId: createdMedicines[0].id, // Amoxicillin 500mg
+          medicineName: 'Amoxicillin 500mg',
+          dosage: '500mg',
+          frequency: '1-0-1 (Twice Daily)',
+          duration: '5 Days',
+          quantityPrescribed: 10,
+          quantityDispensed: 0,
+          instructions: 'Complete full 5-day course. Take with meals.',
+        },
+        {
+          medicineId: createdMedicines[1].id, // Paracetamol 650mg
+          medicineName: 'Paracetamol 650mg',
+          dosage: '650mg',
+          frequency: '1-1-1 (SOS / 3 Times Daily for Fever)',
+          duration: '3 Days',
+          quantityPrescribed: 10,
+          quantityDispensed: 0,
+          instructions: 'Take as needed for temperature > 99.5°F',
+        },
+      ],
+    },
+    // Rx 3: For Clara Oswald (Dr. James Wilson) - On Hold
+    {
+      prescriptionNumber: 'RX-2026-003',
+      doctorId: doctorProfile2.id,
+      patientId: createdPatients[4].id,
+      notes: 'Bronchial asthma exacerbation with nocturnal wheezing.',
+      dispensingStatus: 'ON_HOLD',
+      onHold: true,
+      holdReason: 'Potential allergen cross-reactivity flagged by pharmacist. Clarification requested from Dr. Wilson.',
+      heldById: pharmacistUser.id,
+      heldAt: new Date(Date.now() - 3 * 3600000),
+      items: [
+        {
+          medicineId: createdMedicines[9].id, // Salbutamol Inhaler
+          medicineName: 'Salbutamol Inhaler 100mcg',
+          dosage: '100mcg/puff',
+          frequency: '2 puffs SOS (as needed)',
+          duration: '30 Days',
+          quantityPrescribed: 1,
+          quantityDispensed: 0,
+          instructions: 'Inhale 2 puffs with spacer during acute shortness of breath',
+        },
+        {
+          medicineId: createdMedicines[15].id, // Montelukast 10mg
+          medicineName: 'Montelukast 10mg',
+          dosage: '10mg',
+          frequency: '0-0-1 (Nightly)',
+          duration: '15 Days',
+          quantityPrescribed: 15,
+          quantityDispensed: 0,
+          instructions: 'Take 1 tablet every night before sleep',
+        },
+      ],
+    },
+    // Rx 4: For Thomas Wright (Dr. Sarah Chen) - Partially Dispensed Seed
+    {
+      prescriptionNumber: 'RX-2026-004',
+      doctorId: doctorProfile1.id,
+      patientId: createdPatients[5].id,
+      notes: 'Type 2 Diabetes Mellitus with Dyslipidemia regular prescription.',
+      dispensingStatus: 'PARTIALLY_DISPENSED',
+      items: [
+        {
+          medicineId: createdMedicines[3].id, // Metformin 500mg
+          medicineName: 'Metformin 500mg',
+          dosage: '500mg',
+          frequency: '1-0-1 (Twice Daily)',
+          duration: '30 Days',
+          quantityPrescribed: 60,
+          quantityDispensed: 30, // 30 dispensed earlier
+          instructions: 'Take with main meals (breakfast & dinner)',
+        },
+        {
+          medicineId: createdMedicines[7].id, // Pantoprazole 40mg
+          medicineName: 'Pantoprazole 40mg',
+          dosage: '40mg',
+          frequency: '1-0-0 (Morning Fasting)',
+          duration: '15 Days',
+          quantityPrescribed: 15,
+          quantityDispensed: 0,
+          instructions: 'Take 30 mins before morning breakfast',
+        },
+      ],
+    },
+    // Rx 5: For Marcus Vance (Dr. Marcus Vance OPD) - Pending Dispense
+    {
+      prescriptionNumber: 'RX-2026-005',
+      doctorId: doctorProfile3.id,
+      patientId: createdPatients[2].id,
+      notes: 'Acute gastroenteritis with mild dehydration.',
+      dispensingStatus: 'PENDING',
+      items: [
+        {
+          medicineId: createdMedicines[12].id, // Ciprofloxacin 500mg
+          medicineName: 'Ciprofloxacin 500mg',
+          dosage: '500mg',
+          frequency: '1-0-1 (Twice Daily)',
+          duration: '5 Days',
+          quantityPrescribed: 10,
+          quantityDispensed: 0,
+          instructions: 'Drink plenty of water. Avoid dairy products within 2 hours of dose.',
+        },
+        {
+          medicineId: createdMedicines[14].id, // Ondansetron 4mg
+          medicineName: 'Ondansetron 4mg',
+          dosage: '4mg',
+          frequency: '1-0-1 (Twice Daily before meals)',
+          duration: '3 Days',
+          quantityPrescribed: 6,
+          quantityDispensed: 0,
+          instructions: 'Take 30 mins before meals to control nausea',
+        },
+      ],
+    },
+  ];
+
+  const createdPrescriptions = [];
+  for (const rx of prescriptionsData) {
+    const { items, ...rxData } = rx;
+    const createdRx = await prisma.prescription.create({
+      data: {
+        ...rxData,
+        items: {
+          create: items,
+        },
+      },
+      include: { items: true },
+    });
+    createdPrescriptions.push(createdRx);
+  }
+
+  // ── 19. Dispensing Records (Fulfilled Dispensing + Shared Billing Sync) ──
+  console.log('Seeding Dispensing Transactions & Billing integration...');
+  // Dispense for Rx 4 (Thomas Wright - 30 Metformin)
+  const rx4 = createdPrescriptions[3];
+  const rx4MetforminItem = rx4.items[0];
+  const metforminBatch = createdBatches[6]; // BAT-2026-04A
+  const dispenseQty = 30;
+  const unitPrice = 6.00;
+  const totalAmount = dispenseQty * unitPrice; // $180.00
+
+  // Deduct from batch
+  const updatedBatch = await prisma.medicineBatch.update({
+    where: { id: metforminBatch.id },
+    data: { quantityAvailable: metforminBatch.quantityAvailable - dispenseQty },
+  });
+
+  // Create Dispensing
+  const dispensing1 = await prisma.dispensing.create({
+    data: {
+      dispensingNumber: 'DSP-2026-0001',
+      prescriptionId: rx4.id,
+      patientId: rx4.patientId,
+      pharmacistId: pharmacistUser.id,
+      status: 'Completed',
+      idempotencyKey: `SEED-IDEM-DSP-0001-${Date.now()}`,
+      totalAmount: totalAmount,
+      notes: 'Initial 15-day partial fulfillment dispensed per patient request.',
+      createdAt: yesterday,
+      items: {
+        create: [
+          {
+            prescriptionItemId: rx4MetforminItem.id,
+            medicineId: createdMedicines[3].id,
+            batchId: metforminBatch.id,
+            medicineNameSnapshot: 'Metformin 500mg',
+            batchNumberSnapshot: metforminBatch.batchNumber,
+            quantity: dispenseQty,
+            unitPriceSnapshot: unitPrice,
+            totalPrice: totalAmount,
+            instructionsSnapshot: rx4MetforminItem.instructions,
+            createdAt: yesterday,
+          },
+        ],
+      },
+    },
+    include: { items: true },
+  });
+
+  // Write DISPENSE Stock Transaction
+  await prisma.stockTransaction.create({
+    data: {
+      transactionNumber: `TXN-2026-${String(txnCounter++).padStart(4, '0')}`,
+      medicineId: createdMedicines[3].id,
+      batchId: metforminBatch.id,
+      quantityChange: -dispenseQty,
+      type: 'DISPENSE',
+      reason: `Dispensed for Prescription #${rx4.prescriptionNumber} (Thomas Wright)`,
+      balanceAfter: updatedBatch.quantityAvailable,
+      performedById: pharmacistUser.id,
+      dispensingId: dispensing1.id,
+      createdAt: yesterday,
+    },
+  });
+
+  // Link to Thomas Wright's Invoice
+  const thomasInvoice = await prisma.invoice.findFirst({
+    where: { patientId: rx4.patientId },
+  });
+  if (thomasInvoice) {
+    await prisma.invoiceItem.create({
+      data: {
+        invoiceId: thomasInvoice.id,
+        serviceName: 'Pharmacy: Metformin 500mg (30 Tablets)',
+        category: 'Pharmacy',
+        source: 'PHARMACY',
+        dispensingItemId: dispensing1.items[0].id,
+        unitPrice: unitPrice,
+        quantity: dispenseQty,
+        totalPrice: totalAmount,
+        createdAt: yesterday,
+      },
+    });
+
+    await prisma.dispensing.update({
+      where: { id: dispensing1.id },
+      data: { invoiceId: thomasInvoice.id },
+    });
+  }
+
+  // ── 20. Pharmacist Notifications ──
+  console.log('Seeding Pharmacist Notifications...');
+  await prisma.notification.create({
+    data: {
+      userId: pharmacistUser.id,
+      title: 'New Prescription Queued',
+      message: 'Dr. Sarah Chen generated E-Prescription #RX-2026-001 for Robert Sterling (Cardiology OPD).',
+      type: 'INFO',
+      isRead: false,
+      entityType: 'Prescription',
+      entityId: createdPrescriptions[0].id,
+    },
+  });
+
+  await prisma.notification.create({
+    data: {
+      userId: pharmacistUser.id,
+      title: 'Low Stock Alert: Insulin Glargine',
+      message: 'Insulin Glargine 100IU/ml has only 4 cartridges remaining (Reorder Threshold: 10).',
+      type: 'URGENT',
+      isRead: false,
+      entityType: 'Medicine',
+      entityId: createdMedicines[13].id,
+    },
+  });
+
+  await prisma.notification.create({
+    data: {
+      userId: pharmacistUser.id,
+      title: 'Low Stock Alert: Salbutamol Inhaler',
+      message: 'Salbutamol Inhaler 100mcg has only 5 inhalers remaining (Reorder Threshold: 15).',
+      type: 'URGENT',
+      isRead: false,
+      entityType: 'Medicine',
+      entityId: createdMedicines[9].id,
+    },
+  });
+
+  await prisma.notification.create({
+    data: {
+      userId: pharmacistUser.id,
+      title: 'Near Expiry Warning',
+      message: 'Omeprazole 20mg (Batch BAT-2025-08O) expires in 18 days (30 Units available).',
+      type: 'URGENT',
+      isRead: false,
+      entityType: 'MedicineBatch',
+      entityId: createdBatches[13].id,
+    },
+  });
+
+  await prisma.notification.create({
+    data: {
+      userId: pharmacistUser.id,
+      title: 'Prescription Placed On Hold',
+      message: 'Prescription #RX-2026-003 for Clara Oswald was placed on hold for clinical clarification.',
+      type: 'INFO',
+      isRead: true,
+      readAt: new Date(Date.now() - 3600000),
+      entityType: 'Prescription',
+      entityId: createdPrescriptions[2].id,
+    },
+  });
+
+  // 21. 5 Front Desk / Receptionist Notifications
   await prisma.notification.create({
     data: {
       userId: receptionistUser.id,
@@ -1325,12 +2074,17 @@ async function main() {
     },
   });
 
-  console.log('✅ Seed completed successfully with full Multi-Role Dataset (Doctor + Nurse + Receptionist)!');
+  console.log('✅ Seed completed successfully with full Multi-Role Dataset (Doctor + Nurse + Receptionist + Pharmacist)!');
   console.log(`- 1 Hospital`);
   console.log(`- 1 Receptionist user (receptionist@medcore.health / Receptionist@123) & profile created`);
+  console.log(`- 1 Pharmacist user (pharmacist@medcore.health / Pharmacist@123) & profile created`);
   console.log(`- 5 Doctors across 3 Departments created with full weekly schedules`);
   console.log(`- 2 Nurses created with active assignments`);
   console.log(`- 10 Realistic Patients created with unique IDs`);
+  console.log(`- 16 Pharmacy Catalog Medicines created`);
+  console.log(`- 27 Medicine Batches with varied expiries and opening stock ledger rows`);
+  console.log(`- 5 Prescriptions with mapped items and hold workflows`);
+  console.log(`- 1 Dispensing transaction linked to shared billing`);
   console.log(`- 9 Service Catalog billing master items created`);
   console.log(`- 8 Hospital Beds across 3 Wards created`);
   console.log(`- 3 Inpatient Admissions created`);
@@ -1338,7 +2092,7 @@ async function main() {
   console.log(`- 5 Invoices (Pending, Partially Paid, Paid) created`);
   console.log(`- 8 Payments across Cash, Card, UPI, and Bank Transfer created`);
   console.log(`- 3 Emergency Registrations created`);
-  console.log(`- Notifications created for Receptionist, Doctor, and Nurse`);
+  console.log(`- Notifications created for Receptionist, Doctor, Nurse, and Pharmacist`);
 }
 
 main()

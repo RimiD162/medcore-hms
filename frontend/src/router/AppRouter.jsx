@@ -50,6 +50,24 @@ import ReceptionistPaymentsPage from '../pages/receptionist/ReceptionistPayments
 import ReceptionistNotificationsPage from '../pages/receptionist/ReceptionistNotificationsPage';
 import ReceptionistProfilePage from '../pages/receptionist/ReceptionistProfilePage';
 
+// Pharmacist Pages
+import PharmacistDashboardPage from '../pages/pharmacist/PharmacistDashboardPage';
+import PharmacistMedicinesPage from '../pages/pharmacist/PharmacistMedicinesPage';
+import PharmacistMedicineCreatePage from '../pages/pharmacist/PharmacistMedicineCreatePage';
+import PharmacistMedicineDetailPage from '../pages/pharmacist/PharmacistMedicineDetailPage';
+import PharmacistInventoryPage from '../pages/pharmacist/PharmacistInventoryPage';
+import PharmacistBatchesPage from '../pages/pharmacist/PharmacistBatchesPage';
+import PharmacistTransactionsPage from '../pages/pharmacist/PharmacistTransactionsPage';
+import PharmacistLowStockPage from '../pages/pharmacist/PharmacistLowStockPage';
+import PharmacistExpiryPage from '../pages/pharmacist/PharmacistExpiryPage';
+import PharmacistPrescriptionsPage from '../pages/pharmacist/PharmacistPrescriptionsPage';
+import PharmacistPrescriptionDetailPage from '../pages/pharmacist/PharmacistPrescriptionDetailPage';
+import PharmacistDispensingWorkspacePage from '../pages/pharmacist/PharmacistDispensingWorkspacePage';
+import PharmacistDispensingHistoryPage from '../pages/pharmacist/PharmacistDispensingHistoryPage';
+import PharmacistSalesPage from '../pages/pharmacist/PharmacistSalesPage';
+import PharmacistNotificationsPage from '../pages/pharmacist/PharmacistNotificationsPage';
+import PharmacistProfilePage from '../pages/pharmacist/PharmacistProfilePage';
+
 export const AppRouter = () => {
   const [theme, setTheme] = useState('light');
   const [showPatientModal, setShowPatientModal] = useState(false);
@@ -79,14 +97,21 @@ export const AppRouter = () => {
   const handleLoginSuccess = (role) => {
     setAuthModalMode(null);
     if (role.id === 'doctor') {
+      localStorage.setItem('medcore_auth_token', 'demo-doctor-token');
       navigate('/app/doctor');
       showToast(`Welcome Dr. Sarah Chen! Logged in as ${role.title}.`);
     } else if (role.id === 'nurse') {
+      localStorage.setItem('medcore_auth_token', 'demo-nurse-token');
       navigate('/app/nurse');
       showToast(`Welcome Nurse Sarah Jenkins, RN! Logged in as ${role.title}.`);
     } else if (role.id === 'receptionist') {
+      localStorage.setItem('medcore_auth_token', 'demo-receptionist-token');
       navigate('/app/receptionist');
       showToast(`Welcome Rachel Adams! Logged in as ${role.title}.`);
+    } else if (role.id === 'pharmacist') {
+      localStorage.setItem('medcore_auth_token', 'demo-pharmacist-token');
+      navigate('/app/pharmacist');
+      showToast(`Welcome Marcus Vance, RPh! Logged in as ${role.title}.`);
     } else {
       navigate('/staff-roles');
       showToast(`Logged in as ${role.title} (${role.subtitle})`);
@@ -209,6 +234,37 @@ export const AppRouter = () => {
           <Route path="emergency" element={<ReceptionistEmergencyPage />} />
           <Route path="notifications" element={<ReceptionistNotificationsPage />} />
           <Route path="profile" element={<ReceptionistProfilePage />} />
+        </Route>
+
+        {/* 6. Pharmacist Module Shell & Nested Routes */}
+        <Route
+          path="/app/pharmacist"
+          element={
+            <AppLayout
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              onShowToast={showToast}
+            />
+          }
+        >
+          <Route index element={<PharmacistDashboardPage />} />
+          <Route path="dashboard" element={<PharmacistDashboardPage />} />
+          <Route path="medicines" element={<PharmacistMedicinesPage />} />
+          <Route path="medicines/new" element={<PharmacistMedicineCreatePage />} />
+          <Route path="medicines/:id" element={<PharmacistMedicineDetailPage />} />
+          <Route path="inventory" element={<PharmacistInventoryPage />} />
+          <Route path="batches" element={<PharmacistBatchesPage />} />
+          <Route path="batches/:id" element={<PharmacistBatchesPage />} />
+          <Route path="transactions" element={<PharmacistTransactionsPage />} />
+          <Route path="low-stock" element={<PharmacistLowStockPage />} />
+          <Route path="expiry" element={<PharmacistExpiryPage />} />
+          <Route path="prescriptions" element={<PharmacistPrescriptionsPage />} />
+          <Route path="prescriptions/:id" element={<PharmacistPrescriptionDetailPage />} />
+          <Route path="dispensing" element={<PharmacistDispensingWorkspacePage />} />
+          <Route path="dispensing/history" element={<PharmacistDispensingHistoryPage />} />
+          <Route path="sales" element={<PharmacistSalesPage />} />
+          <Route path="notifications" element={<PharmacistNotificationsPage />} />
+          <Route path="profile" element={<PharmacistProfilePage />} />
         </Route>
 
         {/* Fallback */}

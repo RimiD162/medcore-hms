@@ -152,10 +152,118 @@ async function generateEmergencyNumber(tx = prisma) {
   return `${prefix}${String(seq).padStart(3, '0')}`;
 }
 
+/**
+ * Generate unique medicine catalog code
+ * e.g. MED-2026-001
+ */
+async function generateMedicineCode(tx = prisma) {
+  const currentYear = new Date().getFullYear();
+  const prefix = `MED-${currentYear}-`;
+
+  const latest = await tx.medicine.findFirst({
+    where: { medicineCode: { startsWith: prefix } },
+    orderBy: { medicineCode: 'desc' },
+    select: { medicineCode: true },
+  });
+
+  let seq = 1;
+  if (latest?.medicineCode) {
+    const parts = latest.medicineCode.split('-');
+    if (parts.length === 3) {
+      const parsed = parseInt(parts[2], 10);
+      if (!isNaN(parsed)) seq = parsed + 1;
+    }
+  }
+
+  return `${prefix}${String(seq).padStart(3, '0')}`;
+}
+
+/**
+ * Generate unique dispensing record number
+ * e.g. DSP-2026-0001
+ */
+async function generateDispensingNumber(tx = prisma) {
+  const currentYear = new Date().getFullYear();
+  const prefix = `DSP-${currentYear}-`;
+
+  const latest = await tx.dispensing.findFirst({
+    where: { dispensingNumber: { startsWith: prefix } },
+    orderBy: { dispensingNumber: 'desc' },
+    select: { dispensingNumber: true },
+  });
+
+  let seq = 1;
+  if (latest?.dispensingNumber) {
+    const parts = latest.dispensingNumber.split('-');
+    if (parts.length === 3) {
+      const parsed = parseInt(parts[2], 10);
+      if (!isNaN(parsed)) seq = parsed + 1;
+    }
+  }
+
+  return `${prefix}${String(seq).padStart(4, '0')}`;
+}
+
+/**
+ * Generate unique stock ledger transaction number
+ * e.g. TXN-2026-0001
+ */
+async function generateTransactionNumber(tx = prisma) {
+  const currentYear = new Date().getFullYear();
+  const prefix = `TXN-${currentYear}-`;
+
+  const latest = await tx.stockTransaction.findFirst({
+    where: { transactionNumber: { startsWith: prefix } },
+    orderBy: { transactionNumber: 'desc' },
+    select: { transactionNumber: true },
+  });
+
+  let seq = 1;
+  if (latest?.transactionNumber) {
+    const parts = latest.transactionNumber.split('-');
+    if (parts.length === 3) {
+      const parsed = parseInt(parts[2], 10);
+      if (!isNaN(parsed)) seq = parsed + 1;
+    }
+  }
+
+  return `${prefix}${String(seq).padStart(4, '0')}`;
+}
+
+/**
+ * Generate unique stock receipt number
+ * e.g. REC-2026-0001
+ */
+async function generateStockReceiptNumber(tx = prisma) {
+  const currentYear = new Date().getFullYear();
+  const prefix = `REC-${currentYear}-`;
+
+  const latest = await tx.stockReceipt.findFirst({
+    where: { receiptNumber: { startsWith: prefix } },
+    orderBy: { receiptNumber: 'desc' },
+    select: { receiptNumber: true },
+  });
+
+  let seq = 1;
+  if (latest?.receiptNumber) {
+    const parts = latest.receiptNumber.split('-');
+    if (parts.length === 3) {
+      const parsed = parseInt(parts[2], 10);
+      if (!isNaN(parsed)) seq = parsed + 1;
+    }
+  }
+
+  return `${prefix}${String(seq).padStart(4, '0')}`;
+}
+
 module.exports = {
   generatePatientId,
   generateAppointmentNumber,
   generateInvoiceNumber,
   generatePaymentNumber,
   generateEmergencyNumber,
+  generateMedicineCode,
+  generateDispensingNumber,
+  generateTransactionNumber,
+  generateStockReceiptNumber,
 };

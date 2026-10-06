@@ -26,6 +26,12 @@ import {
   Wallet,
   AlertCircle,
   Building2,
+  Boxes,
+  PackageCheck,
+  AlertTriangle,
+  CalendarClock,
+  ClipboardCheck,
+  FilePlus,
 } from 'lucide-react';
 import Logo from '../Logo';
 
@@ -71,6 +77,23 @@ const receptionistNavItems = [
   { path: '/app/receptionist/profile', label: 'Staff Profile', icon: User },
 ];
 
+const pharmacistNavItems = [
+  { path: '/app/pharmacist', label: 'Pharmacy Dashboard', icon: LayoutDashboard, exact: true },
+  { path: '/app/pharmacist/medicines', label: 'Medicine Catalog', icon: Pill, exact: true },
+  { path: '/app/pharmacist/medicines/new', label: 'Add Medicine', icon: FilePlus },
+  { path: '/app/pharmacist/inventory', label: 'Inventory Overview', icon: Boxes },
+  { path: '/app/pharmacist/batches', label: 'Batch Inventory', icon: PackageCheck },
+  { path: '/app/pharmacist/transactions', label: 'Stock Transactions', icon: Clock },
+  { path: '/app/pharmacist/low-stock', label: 'Low Stock Alerts', icon: AlertTriangle },
+  { path: '/app/pharmacist/expiry', label: 'Expiry Tracking', icon: CalendarClock },
+  { path: '/app/pharmacist/prescriptions', label: 'Prescription Queue', icon: ClipboardList, exact: true },
+  { path: '/app/pharmacist/dispensing', label: 'Dispense Workspace', icon: ClipboardCheck },
+  { path: '/app/pharmacist/dispensing/history', label: 'Dispense History', icon: Receipt },
+  { path: '/app/pharmacist/sales', label: 'Pharmacy Sales', icon: CreditCard },
+  { path: '/app/pharmacist/notifications', label: 'Notifications', icon: Bell, hasBadge: true },
+  { path: '/app/pharmacist/profile', label: 'Staff Profile', icon: User },
+];
+
 export const Sidebar = ({
   collapsed = false,
   onToggleCollapse,
@@ -78,52 +101,66 @@ export const Sidebar = ({
   onCloseMobile,
   unreadNotifications = 0,
   user = null,
-  role = 'DOCTOR', // 'DOCTOR' | 'NURSE' | 'RECEPTIONIST'
+  role = 'DOCTOR', // 'DOCTOR' | 'NURSE' | 'RECEPTIONIST' | 'PHARMACIST'
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const isPharmacist = role === 'PHARMACIST' || location.pathname.startsWith('/app/pharmacist');
   const isReceptionist = role === 'RECEPTIONIST' || location.pathname.startsWith('/app/receptionist');
   const isNurse = role === 'NURSE' || location.pathname.startsWith('/app/nurse');
   
-  const navItems = isReceptionist 
-    ? receptionistNavItems 
-    : isNurse 
-      ? nurseNavItems 
-      : doctorNavItems;
+  const navItems = isPharmacist
+    ? pharmacistNavItems
+    : isReceptionist 
+      ? receptionistNavItems 
+      : isNurse 
+        ? nurseNavItems 
+        : doctorNavItems;
 
-  const workspaceTitle = isReceptionist 
-    ? 'Reception Desk' 
-    : isNurse 
-      ? 'Nurse Station' 
-      : 'Doctor Workspace';
+  const workspaceTitle = isPharmacist
+    ? 'Central Pharmacy'
+    : isReceptionist 
+      ? 'Reception Desk' 
+      : isNurse 
+        ? 'Nurse Station' 
+        : 'Doctor Workspace';
 
-  const profileRoute = isReceptionist 
-    ? '/app/receptionist/profile' 
-    : isNurse 
-      ? '/app/nurse/profile' 
-      : '/app/doctor/profile';
+  const profileRoute = isPharmacist
+    ? '/app/pharmacist/profile'
+    : isReceptionist 
+      ? '/app/receptionist/profile' 
+      : isNurse 
+        ? '/app/nurse/profile' 
+        : '/app/doctor/profile';
 
-  const defaultUser = isReceptionist
+  const defaultUser = isPharmacist
     ? {
-        name: 'Rachel Adams',
-        specialization: 'Lead Front Desk Receptionist',
-        department: 'Main Lobby / Admissions',
-        avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
+        name: 'Marcus Vance, RPh',
+        specialization: 'Lead Clinical Pharmacist',
+        department: 'Central Pharmacy & Dispensary',
+        avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200',
       }
-    : isNurse
+    : isReceptionist
       ? {
-          name: 'Nurse Sarah Jenkins, RN',
-          specialization: 'Senior Ward Charge Nurse',
-          department: 'Ward 3B',
-          avatarUrl: 'https://images.unsplash.com/photo-1594824813624-9b28a883907c?auto=format&fit=crop&q=80&w=200',
+          name: 'Rachel Adams',
+          specialization: 'Lead Front Desk Receptionist',
+          department: 'Main Lobby / Admissions',
+          avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
         }
-      : {
-          name: 'Dr. Sarah Chen',
-          specialization: 'Cardiologist',
-          department: 'OPD-102',
-          avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200',
-        };
+      : isNurse
+        ? {
+            name: 'Nurse Sarah Jenkins, RN',
+            specialization: 'Senior Ward Charge Nurse',
+            department: 'Ward 3B',
+            avatarUrl: 'https://images.unsplash.com/photo-1594824813624-9b28a883907c?auto=format&fit=crop&q=80&w=200',
+          }
+        : {
+            name: 'Dr. Sarah Chen',
+            specialization: 'Cardiologist',
+            department: 'OPD-102',
+            avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200',
+          };
 
   const currentUser = user || defaultUser;
 

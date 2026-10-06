@@ -22,6 +22,10 @@ class ApiError extends Error {
     return new ApiError(404, msg);
   }
 
+  static conflict(msg = 'Conflict detected', errors = []) {
+    return new ApiError(409, msg, errors);
+  }
+
   static internal(msg = 'Internal server error') {
     return new ApiError(500, msg);
   }

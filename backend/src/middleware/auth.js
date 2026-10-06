@@ -8,9 +8,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'medcore_jwt_secret_key_clinical_do
 let cachedDemoDoctor = null;
 let cachedDemoNurse = null;
 let cachedDemoReceptionist = null;
+let cachedDemoPharmacist = null;
 
 async function initDemoCache() {
   try {
+    const pharmacist = await prisma.user.findFirst({
+      where: { role: 'PHARMACIST', isActive: true },
+      include: { pharmacistProfile: true },
+    });
     const receptionist = await prisma.user.findFirst({
       where: { role: 'RECEPTIONIST', isActive: true },
       include: { receptionistProfile: true },
@@ -23,6 +28,17 @@ async function initDemoCache() {
       where: { role: 'DOCTOR', isActive: true },
       include: { doctorProfile: true },
     });
+
+    if (pharmacist) {
+      cachedDemoPharmacist = {
+        id: pharmacist.id,
+        email: pharmacist.email,
+        fullName: pharmacist.fullName,
+        role: pharmacist.role,
+        pharmacistId: pharmacist.pharmacistProfile?.id,
+        pharmacistProfile: pharmacist.pharmacistProfile,
+      };
+    }
 
     if (receptionist) {
       cachedDemoReceptionist = {
@@ -63,7 +79,7 @@ async function initDemoCache() {
 
 /**
  * Authentication Middleware
- * Decodes JWT token and attaches user, doctorProfile, nurseProfile, or receptionistProfile to req.user
+ * Decodes JWT token and attaches user, doctorProfile, nurseProfile, receptionistProfile, or pharmacistProfile to req.user
  */
 async function authMiddleware(req, res, next) {
   try {
@@ -78,10 +94,24 @@ async function authMiddleware(req, res, next) {
     // ── Placeholder / Demo Fallback ──
     // In demo mode or if no token provided, resolve role context based on route prefix or token
     // TODO Phase 1: connect real authenticated user in production
+    const isPharmacistContext = token === 'demo-pharmacist-token' || req.originalUrl?.includes('/api/v1/pharmacist') || req.baseUrl?.includes('/pharmacist');
     const isReceptionistContext = token === 'demo-receptionist-token' || req.originalUrl?.includes('/api/v1/receptionist') || req.baseUrl?.includes('/receptionist');
     const isNurseContext = token === 'demo-nurse-token' || req.originalUrl?.includes('/api/v1/nurse') || req.baseUrl?.includes('/nurse');
 
-    if (!token || token === 'demo-doctor-token' || token === 'demo-nurse-token' || token === 'demo-receptionist-token') {
+    if (!token || token === 'demo-doctor-token' || token === 'demo-nurse-token' || token === 'demo-receptionist-token' || token === 'demo-pharmacist-token') {
+      if (isPharmacistContext) {
+        if (!cachedDemoPharmacist) {
+          await initDemoCache();
+        }
+
+        if (!cachedDemoPharmacist) {
+          return ApiResponse.unauthorized(res, 'No active pharmacist found for workspace session');
+        }
+
+        req.user = { ...cachedDemoPharmacist };
+        return next();
+      }
+
       if (isReceptionistContext) {
         if (!cachedDemoReceptionist) {
           await initDemoCache();
@@ -125,7 +155,7 @@ async function authMiddleware(req, res, next) {
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId || decoded.id },
-      include: { doctorProfile: true, nurseProfile: true, receptionistProfile: true },
+      include: { doctorProfile: true, nurseProfile: true, receptionistProfile: true, pharmacistProfile: true },
     });
 
     if (!user || !user.isActive) {
@@ -143,6 +173,8 @@ async function authMiddleware(req, res, next) {
       nurseProfile: user.nurseProfile,
       receptionistId: user.receptionistProfile?.id,
       receptionistProfile: user.receptionistProfile,
+      pharmacistId: user.pharmacistProfile?.id,
+      pharmacistProfile: user.pharmacistProfile,
     };
 
     next();
