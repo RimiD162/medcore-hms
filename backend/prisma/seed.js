@@ -12,6 +12,16 @@ async function main() {
     try {
       await prisma.$executeRawUnsafe(`
         TRUNCATE TABLE 
+          lab_result_corrections,
+          lab_result_values,
+          lab_results,
+          lab_samples,
+          lab_test_order_items,
+          lab_test_orders,
+          lab_test_parameters,
+          lab_tests,
+          lab_technician_profiles,
+          lab_reports,
           dispensing_items,
           dispensings,
           stock_receipt_items,
@@ -35,7 +45,6 @@ async function main() {
           nurse_profiles,
           prescription_items,
           documents,
-          lab_reports,
           prescriptions,
           medical_records,
           consultations,
@@ -78,6 +87,7 @@ async function main() {
   const nursePasswordHash = await bcrypt.hash('Nurse@123', 10);
   const receptionistPasswordHash = await bcrypt.hash('Receptionist@123', 10);
   const pharmacistPasswordHash = await bcrypt.hash('Pharmacist@123', 10);
+  const labPasswordHash = await bcrypt.hash('Lab@123', 10);
 
   // 3. Receptionist User & Profile
   const receptionistUser = await prisma.user.create({
@@ -133,6 +143,65 @@ async function main() {
       employeeId: 'EMP-PHARM-401',
       phone: '+91 98111 55667',
       bio: 'Chief Clinical Pharmacist with 8+ years specializing in hospital dispensary, batch inventory management, and prescription verification.',
+    },
+  });
+
+  // 3c. Lab Technician Users & Profiles (Alex Mercer, MLT & Dr. Gregory House, Pathologist)
+  const labTechUser = await prisma.user.create({
+    data: {
+      hospitalId: hospital.id,
+      role: 'LAB_TECHNICIAN',
+      fullName: 'Alex Mercer, MLT',
+      email: 'lab@medcore.health',
+      passwordHash: labPasswordHash,
+      phone: '+91 98333 44556',
+      employeeId: 'EMP-LAB-501',
+      avatarUrl: 'https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&q=80&w=300',
+      isActive: true,
+      isVerified: true,
+    },
+  });
+
+  const labTechProfile = await prisma.labTechnicianProfile.create({
+    data: {
+      userId: labTechUser.id,
+      department: 'Diagnostic Pathology & Biochemistry',
+      licenseNumber: 'MLT-2022-44910',
+      shift: 'Morning (08:00 - 16:00)',
+      isSeniorVerifier: false,
+      status: 'On Duty',
+      employeeId: 'EMP-LAB-501',
+      phone: '+91 98333 44556',
+      bio: 'Licensed Medical Laboratory Technician specializing in automated hematology analyzers, sample preservation, and routine clinical assays.',
+    },
+  });
+
+  const labVerifierUser = await prisma.user.create({
+    data: {
+      hospitalId: hospital.id,
+      role: 'LAB_TECHNICIAN',
+      fullName: 'Dr. Gregory House, MD, Pathologist',
+      email: 'lab_verifier@medcore.health',
+      passwordHash: labPasswordHash,
+      phone: '+91 98444 77889',
+      employeeId: 'EMP-LAB-502',
+      avatarUrl: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=300',
+      isActive: true,
+      isVerified: true,
+    },
+  });
+
+  const labVerifierProfile = await prisma.labTechnicianProfile.create({
+    data: {
+      userId: labVerifierUser.id,
+      department: 'Clinical Pathology & Laboratory Medicine',
+      licenseNumber: 'PATH-2018-99012',
+      shift: 'General (09:00 - 17:00)',
+      isSeniorVerifier: true,
+      status: 'On Duty',
+      employeeId: 'EMP-LAB-502',
+      phone: '+91 98444 77889',
+      bio: 'Consultant Clinical Pathologist and Senior Quality Verifier with 12+ years overseeing high-complexity diagnostic validation and biomarker verification.',
     },
   });
 
@@ -2074,25 +2143,795 @@ async function main() {
     },
   });
 
-  console.log('✅ Seed completed successfully with full Multi-Role Dataset (Doctor + Nurse + Receptionist + Pharmacist)!');
+  // 22. Seed Laboratory Catalog Tests & Configured Parameters
+  console.log('Seeding Laboratory Catalog Tests & Parameters...');
+  const createdLabTests = [];
+
+  const labTestsData = [
+    {
+      code: 'LAB-CBC',
+      name: 'Complete Blood Count (CBC)',
+      category: 'Hematology',
+      description: 'Comprehensive evaluation of red blood cells, white blood cells, and platelets for anemia and infection screening.',
+      sampleType: 'BLOOD',
+      sampleVolume: '3 mL EDTA',
+      processingTime: 45,
+      price: 35.00,
+      parameters: [
+        { name: 'Hemoglobin', resultType: 'NUMERIC', unit: 'g/dL', displayOrder: 1, low: 12.0, high: 17.5, criticalLow: 7.0, criticalHigh: 20.0 },
+        { name: 'WBC Count', resultType: 'NUMERIC', unit: '10^3/uL', displayOrder: 2, low: 4.5, high: 11.0, criticalLow: 2.0, criticalHigh: 30.0 },
+        { name: 'Platelet Count', resultType: 'NUMERIC', unit: '10^3/uL', displayOrder: 3, low: 150, high: 450, criticalLow: 50, criticalHigh: 1000 },
+        { name: 'RBC Count', resultType: 'NUMERIC', unit: '10^6/uL', displayOrder: 4, low: 4.0, high: 5.9 },
+        { name: 'Hematocrit (PCV)', resultType: 'NUMERIC', unit: '%', displayOrder: 5, low: 36.0, high: 52.0 },
+      ],
+    },
+    {
+      code: 'LAB-LFT',
+      name: 'Liver Function Panel (LFT)',
+      category: 'Biochemistry',
+      description: 'Assessment of hepatic enzymes, bilirubin, and cellular metabolic integrity.',
+      sampleType: 'SERUM',
+      sampleVolume: '5 mL Plain Clot',
+      processingTime: 60,
+      price: 48.00,
+      parameters: [
+        { name: 'Total Bilirubin', resultType: 'NUMERIC', unit: 'mg/dL', displayOrder: 1, low: 0.2, high: 1.2, criticalHigh: 15.0 },
+        { name: 'Direct Bilirubin', resultType: 'NUMERIC', unit: 'mg/dL', displayOrder: 2, low: 0.0, high: 0.3 },
+        { name: 'SGOT / AST', resultType: 'NUMERIC', unit: 'U/L', displayOrder: 3, low: 10, high: 40, criticalHigh: 500 },
+        { name: 'SGPT / ALT', resultType: 'NUMERIC', unit: 'U/L', displayOrder: 4, low: 7, high: 56, criticalHigh: 500 },
+        { name: 'Alkaline Phosphatase', resultType: 'NUMERIC', unit: 'U/L', displayOrder: 5, low: 44, high: 147 },
+      ],
+    },
+    {
+      code: 'LAB-KFT',
+      name: 'Renal Function Panel (KFT)',
+      category: 'Biochemistry',
+      description: 'Kidney filtration efficiency, serum urea, creatinine, and basic electrolytes.',
+      sampleType: 'SERUM',
+      sampleVolume: '4 mL Plain Clot',
+      processingTime: 60,
+      price: 42.00,
+      parameters: [
+        { name: 'Blood Urea Nitrogen (BUN)', resultType: 'NUMERIC', unit: 'mg/dL', displayOrder: 1, low: 7.0, high: 20.0, criticalHigh: 100.0 },
+        { name: 'Serum Creatinine', resultType: 'NUMERIC', unit: 'mg/dL', displayOrder: 2, low: 0.6, high: 1.3, criticalHigh: 5.0 },
+        { name: 'Serum Uric Acid', resultType: 'NUMERIC', unit: 'mg/dL', displayOrder: 3, low: 3.5, high: 7.2 },
+        { name: 'Serum Sodium', resultType: 'NUMERIC', unit: 'mEq/L', displayOrder: 4, low: 135, high: 145, criticalLow: 120, criticalHigh: 160 },
+      ],
+    },
+    {
+      code: 'LAB-LIPID',
+      name: 'Fasting Lipid Profile',
+      category: 'Biochemistry',
+      description: 'Total cholesterol, triglycerides, HDL, and LDL lipid fractionation for cardiovascular risk screening.',
+      sampleType: 'SERUM',
+      sampleVolume: '4 mL Fasting Serum',
+      processingTime: 60,
+      price: 50.00,
+      parameters: [
+        { name: 'Total Cholesterol', resultType: 'NUMERIC', unit: 'mg/dL', displayOrder: 1, low: 125, high: 200 },
+        { name: 'Serum Triglycerides', resultType: 'NUMERIC', unit: 'mg/dL', displayOrder: 2, low: 50, high: 150 },
+        { name: 'HDL Cholesterol', resultType: 'NUMERIC', unit: 'mg/dL', displayOrder: 3, low: 40, high: 60 },
+        { name: 'LDL Cholesterol', resultType: 'NUMERIC', unit: 'mg/dL', displayOrder: 4, low: 50, high: 100 },
+      ],
+    },
+    {
+      code: 'LAB-TROP-I',
+      name: 'Cardiac Troponin-I (High Sensitivity)',
+      category: 'Biochemistry',
+      description: 'Emergency quantitative biomarker for acute myocardial infarction and myocardial injury.',
+      sampleType: 'SERUM',
+      sampleVolume: '3 mL Heparin / Plain',
+      processingTime: 30,
+      price: 65.00,
+      parameters: [
+        { name: 'Serum Troponin-I', resultType: 'NUMERIC', unit: 'ng/mL', displayOrder: 1, low: 0.00, high: 0.04, criticalHigh: 0.04 },
+      ],
+    },
+    {
+      code: 'LAB-HBA1C',
+      name: 'Glycated Hemoglobin (HbA1c)',
+      category: 'Biochemistry',
+      description: '3-month average plasma glucose concentration monitoring for diabetic patients.',
+      sampleType: 'BLOOD',
+      sampleVolume: '3 mL EDTA',
+      processingTime: 45,
+      price: 38.00,
+      parameters: [
+        { name: 'HbA1c Fraction', resultType: 'NUMERIC', unit: '%', displayOrder: 1, low: 4.0, high: 5.6, criticalHigh: 10.0 },
+      ],
+    },
+    {
+      code: 'LAB-TSH',
+      name: 'Thyroid Stimulating Hormone (TSH)',
+      category: 'Biochemistry',
+      description: 'Chemiluminescence assay for primary hypo- and hyper-thyroidism assessment.',
+      sampleType: 'SERUM',
+      sampleVolume: '3 mL Plain',
+      processingTime: 90,
+      price: 32.00,
+      parameters: [
+        { name: 'TSH Ultra-Sensitive', resultType: 'NUMERIC', unit: 'uIU/mL', displayOrder: 1, low: 0.4, high: 4.5, criticalHigh: 20.0 },
+      ],
+    },
+    {
+      code: 'LAB-URINE-RE',
+      name: 'Routine Urinalysis & Microscopy',
+      category: 'Urinalysis',
+      description: 'Physical, chemical, and microscopic sediment analysis for renal and UTI diagnostics.',
+      sampleType: 'URINE',
+      sampleVolume: '15 mL Mid-stream Urine',
+      processingTime: 30,
+      price: 20.00,
+      parameters: [
+        { name: 'Urine Color', resultType: 'QUALITATIVE', displayOrder: 1, allowedOptions: ['Pale Yellow', 'Straw', 'Amber', 'Red / Bloody', 'Cloudy'] },
+        { name: 'Urine Protein', resultType: 'POSITIVE_NEGATIVE', displayOrder: 2, allowedOptions: ['Negative', 'Trace', '1+', '2+', '3+'] },
+        { name: 'Urine Glucose', resultType: 'POSITIVE_NEGATIVE', displayOrder: 3, allowedOptions: ['Negative', 'Trace', '1+', '2+', '3+'] },
+        { name: 'Pus Cells / WBCs', resultType: 'NUMERIC', unit: 'HPF', displayOrder: 4, low: 0, high: 5 },
+      ],
+    },
+    {
+      code: 'LAB-COVID-RT',
+      name: 'SARS-CoV-2 RT-PCR Qualitative',
+      category: 'Microbiology',
+      description: 'Real-time reverse transcription polymerase chain reaction viral RNA detection.',
+      sampleType: 'SWAB',
+      sampleVolume: 'Nasopharyngeal Swab in VTM',
+      processingTime: 180,
+      price: 45.00,
+      parameters: [
+        { name: 'RT-PCR Viral RNA', resultType: 'POSITIVE_NEGATIVE', displayOrder: 1, allowedOptions: ['Negative', 'Positive', 'Inconclusive'] },
+      ],
+    },
+    {
+      code: 'LAB-CRP',
+      name: 'C-Reactive Protein (Quantitative)',
+      category: 'Serology',
+      description: 'High-sensitivity systemic inflammatory biomarker for bacterial vs viral triage.',
+      sampleType: 'SERUM',
+      sampleVolume: '3 mL Plain Clot',
+      processingTime: 45,
+      price: 28.00,
+      parameters: [
+        { name: 'Serum CRP Level', resultType: 'NUMERIC', unit: 'mg/L', displayOrder: 1, low: 0.0, high: 5.0, criticalHigh: 50.0 },
+      ],
+    },
+  ];
+
+  for (const t of labTestsData) {
+    const { parameters, ...testFields } = t;
+    const createdTest = await prisma.labTest.create({
+      data: {
+        ...testFields,
+        parameters: {
+          create: parameters,
+        },
+      },
+      include: {
+        parameters: true,
+      },
+    });
+    createdLabTests.push(createdTest);
+  }
+
+  // 23. Seed Laboratory Orders, Samples, Results, and Reports
+  console.log('Seeding Laboratory Orders, Samples, Results, and Release Reports...');
+
+  // Order 1: STAT Cardiac Troponin-I + CBC for Robert Sterling (Dr. Sarah Chen) -> RELEASED (CRITICAL Troponin)
+  const order1 = await prisma.labTestOrder.create({
+    data: {
+      orderNumber: 'ORD-2026-0001',
+      patientId: createdPatients[0].id,
+      orderingDoctorId: doctorProfile1.id,
+      priority: 'STAT',
+      status: 'COMPLETED',
+      clinicalIndication: 'Acute chest pain radiating to left arm. R/O NSTEMI.',
+      orderedAt: new Date(Date.now() - 4 * 3600000),
+    },
+  });
+
+  const order1Item1 = await prisma.labTestOrderItem.create({
+    data: {
+      orderId: order1.id,
+      labTestId: createdLabTests[4].id, // TROP-I
+      testNameSnapshot: createdLabTests[4].name,
+      priceSnapshot: createdLabTests[4].price,
+      status: 'COMPLETED',
+    },
+  });
+
+  const sample1 = await prisma.labSample.create({
+    data: {
+      sampleCode: 'LAB-SMP-000001',
+      orderId: order1.id,
+      patientId: createdPatients[0].id,
+      sampleType: 'SERUM',
+      status: 'PROCESSED',
+      collectedAt: new Date(Date.now() - 3.5 * 3600000),
+      collectedById: labTechUser.id,
+      sampleCondition: 'Good',
+      receivedAt: new Date(Date.now() - 3.2 * 3600000),
+      receivedById: labTechUser.id,
+      processingStartedAt: new Date(Date.now() - 3.0 * 3600000),
+      processingStartedById: labTechUser.id,
+      processingCompletedAt: new Date(Date.now() - 2.5 * 3600000),
+      processingCompletedById: labTechUser.id,
+    },
+  });
+
+  await prisma.labTestOrderItem.update({
+    where: { id: order1Item1.id },
+    data: { sampleId: sample1.id },
+  });
+
+  const result1 = await prisma.labResult.create({
+    data: {
+      orderItemId: order1Item1.id,
+      sampleId: sample1.id,
+      status: 'RELEASED',
+      version: 1,
+      enteredById: labTechUser.id,
+      enteredAt: new Date(Date.now() - 2.4 * 3600000),
+      verifiedById: labVerifierUser.id,
+      verifiedAt: new Date(Date.now() - 2.0 * 3600000),
+    },
+  });
+
+  const tropParam = createdLabTests[4].parameters[0];
+  await prisma.labResultValue.create({
+    data: {
+      labResultId: result1.id,
+      parameterId: tropParam.id,
+      numericValue: 0.18, // Significantly above 0.04 -> CRITICAL
+      unitSnapshot: tropParam.unit,
+      referenceRangeSnapshot: `0.00 - ${tropParam.high} ${tropParam.unit}`,
+      flag: 'CRITICAL',
+    },
+  });
+
+  const report1 = await prisma.labReport.create({
+    data: {
+      orderId: order1.id,
+      reportNumber: 'REP-2026-0001',
+      status: 'RELEASED',
+      revision: 1,
+      generatedAt: new Date(Date.now() - 2.0 * 3600000),
+      verifiedAt: new Date(Date.now() - 2.0 * 3600000),
+      releasedAt: new Date(Date.now() - 1.8 * 3600000),
+      createdById: labTechUser.id,
+      verifiedById: labVerifierUser.id,
+      releasedById: labVerifierUser.id,
+      doctorNotes: 'Critical Troponin-I elevation (0.18 ng/mL). Patient immediately transferred to CCU Bay 2 for coronary angiogram prep.',
+      isReviewed: true,
+      reviewedAt: new Date(Date.now() - 1.5 * 3600000),
+      contentSnapshot: {
+        orderNumber: 'ORD-2026-0001',
+        patient: { name: createdPatients[0].fullName, id: createdPatients[0].patientIdNumber },
+        tests: [{ name: createdLabTests[4].name, values: [{ parameter: tropParam.name, value: 0.18, unit: tropParam.unit, flag: 'CRITICAL' }] }],
+      },
+    },
+  });
+
+  // Attach Lab Line Item to Open Invoice #INV-2026-0001
+  const existingInvoice1 = await prisma.invoice.findFirst({
+    where: { patientId: createdPatients[0].id },
+  });
+  if (existingInvoice1) {
+    await prisma.invoiceItem.create({
+      data: {
+        invoiceId: existingInvoice1.id,
+        serviceName: createdLabTests[4].name,
+        category: 'Diagnostic',
+        source: 'LAB',
+        labTestOrderItemId: order1Item1.id,
+        unitPrice: createdLabTests[4].price,
+        quantity: 1,
+        totalPrice: createdLabTests[4].price,
+      },
+    });
+  }
+
+  // Order 2: Routine CBC + Lipid for Elena Rostova (Dr. Sarah Chen) -> RELEASED (HIGH Cholesterol)
+  const order2 = await prisma.labTestOrder.create({
+    data: {
+      orderNumber: 'ORD-2026-0002',
+      patientId: createdPatients[1].id,
+      orderingDoctorId: doctorProfile1.id,
+      priority: 'ROUTINE',
+      status: 'COMPLETED',
+      clinicalIndication: 'Post-op 6-week routine lipid & blood evaluation.',
+      orderedAt: new Date(Date.now() - 24 * 3600000),
+    },
+  });
+
+  const order2Item1 = await prisma.labTestOrderItem.create({
+    data: {
+      orderId: order2.id,
+      labTestId: createdLabTests[0].id, // CBC
+      testNameSnapshot: createdLabTests[0].name,
+      priceSnapshot: createdLabTests[0].price,
+      status: 'COMPLETED',
+    },
+  });
+
+  const sample2 = await prisma.labSample.create({
+    data: {
+      sampleCode: 'LAB-SMP-000002',
+      orderId: order2.id,
+      patientId: createdPatients[1].id,
+      sampleType: 'BLOOD',
+      status: 'PROCESSED',
+      collectedAt: new Date(Date.now() - 20 * 3600000),
+      collectedById: labTechUser.id,
+      sampleCondition: 'Good',
+      receivedAt: new Date(Date.now() - 19 * 3600000),
+      receivedById: labTechUser.id,
+      processingStartedAt: new Date(Date.now() - 18 * 3600000),
+      processingStartedById: labTechUser.id,
+      processingCompletedAt: new Date(Date.now() - 16 * 3600000),
+      processingCompletedById: labTechUser.id,
+    },
+  });
+
+  await prisma.labTestOrderItem.update({
+    where: { id: order2Item1.id },
+    data: { sampleId: sample2.id },
+  });
+
+  const result2 = await prisma.labResult.create({
+    data: {
+      orderItemId: order2Item1.id,
+      sampleId: sample2.id,
+      status: 'RELEASED',
+      version: 1,
+      enteredById: labTechUser.id,
+      enteredAt: new Date(Date.now() - 15 * 3600000),
+      verifiedById: labVerifierUser.id,
+      verifiedAt: new Date(Date.now() - 12 * 3600000),
+    },
+  });
+
+  for (const p of createdLabTests[0].parameters) {
+    let val = 13.5;
+    let flag = 'NORMAL';
+    if (p.name === 'Hemoglobin') val = 13.8;
+    if (p.name === 'WBC Count') val = 6.8;
+    if (p.name === 'Platelet Count') val = 280;
+    if (p.name === 'RBC Count') val = 4.6;
+    if (p.name === 'Hematocrit (PCV)') val = 41.2;
+
+    await prisma.labResultValue.create({
+      data: {
+        labResultId: result2.id,
+        parameterId: p.id,
+        numericValue: val,
+        unitSnapshot: p.unit,
+        referenceRangeSnapshot: `${p.low || 0} - ${p.high || 0} ${p.unit || ''}`,
+        flag,
+      },
+    });
+  }
+
+  await prisma.labReport.create({
+    data: {
+      orderId: order2.id,
+      reportNumber: 'REP-2026-0002',
+      status: 'RELEASED',
+      revision: 1,
+      generatedAt: new Date(Date.now() - 12 * 3600000),
+      verifiedAt: new Date(Date.now() - 12 * 3600000),
+      releasedAt: new Date(Date.now() - 10 * 3600000),
+      createdById: labTechUser.id,
+      verifiedById: labVerifierUser.id,
+      releasedById: labVerifierUser.id,
+      doctorNotes: 'CBC within normal limits. Patient recovering well.',
+      isReviewed: true,
+      reviewedAt: new Date(Date.now() - 8 * 3600000),
+    },
+  });
+
+  // Order 3: Marcus Vance (Dr. Marcus Vance) - LFT & KFT with Sample Rejection & Linked Recollection
+  const order3 = await prisma.labTestOrder.create({
+    data: {
+      orderNumber: 'ORD-2026-0003',
+      patientId: createdPatients[2].id,
+      orderingDoctorId: doctorProfile2.id,
+      priority: 'URGENT',
+      status: 'SAMPLE_PENDING',
+      clinicalIndication: 'Routine DM II annual check, liver and kidney screening.',
+      orderedAt: new Date(Date.now() - 10 * 3600000),
+    },
+  });
+
+  const order3Item1 = await prisma.labTestOrderItem.create({
+    data: {
+      orderId: order3.id,
+      labTestId: createdLabTests[1].id, // LFT
+      testNameSnapshot: createdLabTests[1].name,
+      priceSnapshot: createdLabTests[1].price,
+      status: 'SAMPLE_PENDING',
+    },
+  });
+
+  // Rejected original sample
+  const rejectedSample = await prisma.labSample.create({
+    data: {
+      sampleCode: 'LAB-SMP-000003',
+      orderId: order3.id,
+      patientId: createdPatients[2].id,
+      sampleType: 'SERUM',
+      status: 'REJECTED',
+      collectedAt: new Date(Date.now() - 8 * 3600000),
+      collectedById: labTechUser.id,
+      sampleCondition: 'Hemolyzed',
+      rejectionReason: 'Severe hemolysis in serum tube rendering photometric assay inaccurate',
+      rejectedAt: new Date(Date.now() - 7 * 3600000),
+      rejectedById: labVerifierUser.id,
+    },
+  });
+
+  // Recollected new sample linked to rejected sample
+  const recollectionSample = await prisma.labSample.create({
+    data: {
+      sampleCode: 'LAB-SMP-000004',
+      orderId: order3.id,
+      patientId: createdPatients[2].id,
+      sampleType: 'SERUM',
+      status: 'PENDING',
+      recollectionOfId: rejectedSample.id,
+      collectionNotes: 'Recollection requested due to hemolysis on #LAB-SMP-000003.',
+    },
+  });
+
+  await prisma.labTestOrderItem.update({
+    where: { id: order3Item1.id },
+    data: { sampleId: recollectionSample.id },
+  });
+
+  // Order 4: David Miller (Dr. Sarah Chen) - HbA1c with Correction History (Entered typo 18.2 corrected to 14.2)
+  const order4 = await prisma.labTestOrder.create({
+    data: {
+      orderNumber: 'ORD-2026-0004',
+      patientId: createdPatients[6].id,
+      orderingDoctorId: doctorProfile1.id,
+      priority: 'ROUTINE',
+      status: 'COMPLETED',
+      clinicalIndication: 'Evaluation of glycemic control in known diabetic patient.',
+      orderedAt: new Date(Date.now() - 48 * 3600000),
+    },
+  });
+
+  const order4Item1 = await prisma.labTestOrderItem.create({
+    data: {
+      orderId: order4.id,
+      labTestId: createdLabTests[5].id, // HbA1c
+      testNameSnapshot: createdLabTests[5].name,
+      priceSnapshot: createdLabTests[5].price,
+      status: 'COMPLETED',
+    },
+  });
+
+  const sample4 = await prisma.labSample.create({
+    data: {
+      sampleCode: 'LAB-SMP-000005',
+      orderId: order4.id,
+      patientId: createdPatients[6].id,
+      sampleType: 'BLOOD',
+      status: 'PROCESSED',
+      collectedAt: new Date(Date.now() - 40 * 3600000),
+      collectedById: labTechUser.id,
+      sampleCondition: 'Good',
+      receivedAt: new Date(Date.now() - 38 * 3600000),
+      receivedById: labTechUser.id,
+      processingStartedAt: new Date(Date.now() - 36 * 3600000),
+      processingStartedById: labTechUser.id,
+      processingCompletedAt: new Date(Date.now() - 30 * 3600000),
+      processingCompletedById: labTechUser.id,
+    },
+  });
+
+  await prisma.labTestOrderItem.update({
+    where: { id: order4Item1.id },
+    data: { sampleId: sample4.id },
+  });
+
+  const result4 = await prisma.labResult.create({
+    data: {
+      orderItemId: order4Item1.id,
+      sampleId: sample4.id,
+      status: 'RELEASED',
+      version: 2, // Corrected version
+      enteredById: labTechUser.id,
+      enteredAt: new Date(Date.now() - 28 * 3600000),
+      verifiedById: labVerifierUser.id,
+      verifiedAt: new Date(Date.now() - 20 * 3600000),
+    },
+  });
+
+  const hba1cParam = createdLabTests[5].parameters[0];
+  await prisma.labResultValue.create({
+    data: {
+      labResultId: result4.id,
+      parameterId: hba1cParam.id,
+      numericValue: 8.4, // High glycemic flag
+      unitSnapshot: '%',
+      referenceRangeSnapshot: '4.0 - 5.6 %',
+      flag: 'HIGH',
+    },
+  });
+
+  // Add correction audit row
+  await prisma.labResultCorrection.create({
+    data: {
+      labResultId: result4.id,
+      originalValues: { value: 18.2, flag: 'CRITICAL' },
+      correctedValues: { value: 8.4, flag: 'HIGH' },
+      reason: 'Transcription typo corrected upon optical calibrator re-run.',
+      correctedById: labVerifierUser.id,
+      correctedAt: new Date(Date.now() - 22 * 3600000),
+    },
+  });
+
+  await prisma.labReport.create({
+    data: {
+      orderId: order4.id,
+      reportNumber: 'REP-2026-0003',
+      status: 'RELEASED',
+      revision: 2,
+      isAmended: true,
+      amendedAt: new Date(Date.now() - 20 * 3600000),
+      generatedAt: new Date(Date.now() - 28 * 3600000),
+      verifiedAt: new Date(Date.now() - 20 * 3600000),
+      releasedAt: new Date(Date.now() - 19 * 3600000),
+      createdById: labTechUser.id,
+      verifiedById: labVerifierUser.id,
+      releasedById: labVerifierUser.id,
+      doctorNotes: 'HbA1c 8.4% indicates suboptimal glycemic control. Dose escalation of Metformin planned.',
+      isReviewed: true,
+      reviewedAt: new Date(Date.now() - 15 * 3600000),
+    },
+  });
+
+  // Order 5: Clara Oswald (Dr. Marcus Vance) - Urine Routine & Microscopy -> PROCESSING
+  const order5 = await prisma.labTestOrder.create({
+    data: {
+      orderNumber: 'ORD-2026-0005',
+      patientId: createdPatients[7].id,
+      orderingDoctorId: doctorProfile2.id,
+      priority: 'ROUTINE',
+      status: 'PROCESSING',
+      clinicalIndication: 'Dysuria and mild lower abdominal cramps.',
+      orderedAt: new Date(Date.now() - 3 * 3600000),
+    },
+  });
+
+  const order5Item1 = await prisma.labTestOrderItem.create({
+    data: {
+      orderId: order5.id,
+      labTestId: createdLabTests[7].id, // Urine RE
+      testNameSnapshot: createdLabTests[7].name,
+      priceSnapshot: createdLabTests[7].price,
+      status: 'PROCESSING',
+    },
+  });
+
+  const sample5 = await prisma.labSample.create({
+    data: {
+      sampleCode: 'LAB-SMP-000006',
+      orderId: order5.id,
+      patientId: createdPatients[7].id,
+      sampleType: 'URINE',
+      status: 'PROCESSING',
+      collectedAt: new Date(Date.now() - 2.5 * 3600000),
+      collectedById: labTechUser.id,
+      sampleCondition: 'Good',
+      receivedAt: new Date(Date.now() - 2.0 * 3600000),
+      receivedById: labTechUser.id,
+      processingStartedAt: new Date(Date.now() - 1.0 * 3600000),
+      processingStartedById: labTechUser.id,
+    },
+  });
+
+  await prisma.labTestOrderItem.update({
+    where: { id: order5Item1.id },
+    data: { sampleId: sample5.id },
+  });
+
+  // Order 6: Arthur Pendelton (Dr. Alex Rivera) - CRP + KFT -> RESULT_PENDING (Sample PROCESSED, awaiting Result Entry)
+  const order6 = await prisma.labTestOrder.create({
+    data: {
+      orderNumber: 'ORD-2026-0006',
+      patientId: createdPatients[8].id,
+      orderingDoctorId: doctorProfile4.id,
+      priority: 'URGENT',
+      status: 'RESULT_PENDING',
+      clinicalIndication: 'Post-op knee swelling and elevated ESR. Check CRP.',
+      orderedAt: new Date(Date.now() - 5 * 3600000),
+    },
+  });
+
+  const order6Item1 = await prisma.labTestOrderItem.create({
+    data: {
+      orderId: order6.id,
+      labTestId: createdLabTests[9].id, // CRP
+      testNameSnapshot: createdLabTests[9].name,
+      priceSnapshot: createdLabTests[9].price,
+      status: 'RESULT_PENDING',
+    },
+  });
+
+  const sample6 = await prisma.labSample.create({
+    data: {
+      sampleCode: 'LAB-SMP-000007',
+      orderId: order6.id,
+      patientId: createdPatients[8].id,
+      sampleType: 'SERUM',
+      status: 'PROCESSED',
+      collectedAt: new Date(Date.now() - 4 * 3600000),
+      collectedById: labTechUser.id,
+      sampleCondition: 'Good',
+      receivedAt: new Date(Date.now() - 3.5 * 3600000),
+      receivedById: labTechUser.id,
+      processingStartedAt: new Date(Date.now() - 2.5 * 3600000),
+      processingStartedById: labTechUser.id,
+      processingCompletedAt: new Date(Date.now() - 1.5 * 3600000),
+      processingCompletedById: labTechUser.id,
+    },
+  });
+
+  await prisma.labTestOrderItem.update({
+    where: { id: order6Item1.id },
+    data: { sampleId: sample6.id },
+  });
+
+  // Pending Lab Result awaiting technician entry
+  await prisma.labResult.create({
+    data: {
+      orderItemId: order6Item1.id,
+      sampleId: sample6.id,
+      status: 'PENDING',
+      version: 1,
+    },
+  });
+
+  // Order 7: Maya Patel (Dr. Priya Sharma) - TSH -> SAMPLE_COLLECTED
+  const order7 = await prisma.labTestOrder.create({
+    data: {
+      orderNumber: 'ORD-2026-0007',
+      patientId: createdPatients[9].id,
+      orderingDoctorId: doctorProfile3.id,
+      priority: 'ROUTINE',
+      status: 'SAMPLE_COLLECTED',
+      clinicalIndication: 'Routine pediatric growth profile & thyroid screen.',
+      orderedAt: new Date(Date.now() - 2 * 3600000),
+    },
+  });
+
+  const order7Item1 = await prisma.labTestOrderItem.create({
+    data: {
+      orderId: order7.id,
+      labTestId: createdLabTests[6].id, // TSH
+      testNameSnapshot: createdLabTests[6].name,
+      priceSnapshot: createdLabTests[6].price,
+      status: 'SAMPLE_COLLECTED',
+    },
+  });
+
+  const sample7 = await prisma.labSample.create({
+    data: {
+      sampleCode: 'LAB-SMP-000008',
+      orderId: order7.id,
+      patientId: createdPatients[9].id,
+      sampleType: 'SERUM',
+      status: 'COLLECTED',
+      collectedAt: new Date(Date.now() - 1 * 3600000),
+      collectedById: labTechUser.id,
+      sampleCondition: 'Good',
+    },
+  });
+
+  await prisma.labTestOrderItem.update({
+    where: { id: order7Item1.id },
+    data: { sampleId: sample7.id },
+  });
+
+  // Order 8: Thomas Wright (Dr. Sarah Chen) - Fasting Lipid Profile -> ORDERED (Awaiting collection)
+  const order8 = await prisma.labTestOrder.create({
+    data: {
+      orderNumber: 'ORD-2026-0008',
+      patientId: createdPatients[5].id,
+      orderingDoctorId: doctorProfile1.id,
+      priority: 'ROUTINE',
+      status: 'ORDERED',
+      clinicalIndication: 'Annual cardiology risk profile.',
+      orderedAt: new Date(Date.now() - 1 * 3600000),
+    },
+  });
+
+  const order8Item1 = await prisma.labTestOrderItem.create({
+    data: {
+      orderId: order8.id,
+      labTestId: createdLabTests[3].id, // Lipid
+      testNameSnapshot: createdLabTests[3].name,
+      priceSnapshot: createdLabTests[3].price,
+      status: 'ORDERED',
+    },
+  });
+
+  const sample8 = await prisma.labSample.create({
+    data: {
+      sampleCode: 'LAB-SMP-000009',
+      orderId: order8.id,
+      patientId: createdPatients[5].id,
+      sampleType: 'SERUM',
+      status: 'PENDING',
+    },
+  });
+
+  await prisma.labTestOrderItem.update({
+    where: { id: order8Item1.id },
+    data: { sampleId: sample8.id },
+  });
+
+  // 24. Seed Lab Notifications
+  console.log('Seeding Laboratory Staff Notifications...');
+  await prisma.notification.create({
+    data: {
+      userId: labTechUser.id,
+      title: 'STAT Lab Order Placed',
+      message: 'Dr. Sarah Chen placed STAT Order #ORD-2026-0001 (Troponin-I) for Robert Sterling.',
+      type: 'URGENT',
+      isRead: false,
+      entityType: 'LabTestOrder',
+      entityId: order1.id,
+    },
+  });
+
+  await prisma.notification.create({
+    data: {
+      userId: labVerifierUser.id,
+      title: 'Critical Result Awaiting Verification',
+      message: 'Troponin-I result for Robert Sterling flagged CRITICAL (0.18 ng/mL). Please verify immediately.',
+      type: 'URGENT',
+      isRead: true,
+      readAt: new Date(Date.now() - 2.1 * 3600000),
+      entityType: 'LabResult',
+      entityId: result1.id,
+    },
+  });
+
+  await prisma.notification.create({
+    data: {
+      userId: labTechUser.id,
+      title: 'Recollection Required',
+      message: 'Sample #LAB-SMP-000003 for Marcus Vance was rejected (Hemolyzed). Please collect #LAB-SMP-000004.',
+      type: 'INFO',
+      isRead: false,
+      entityType: 'LabSample',
+      entityId: recollectionSample.id,
+    },
+  });
+
+  console.log('✅ Seed completed successfully with full Multi-Role Dataset (Doctor + Nurse + Receptionist + Pharmacist + Lab Technician)!');
   console.log(`- 1 Hospital`);
   console.log(`- 1 Receptionist user (receptionist@medcore.health / Receptionist@123) & profile created`);
   console.log(`- 1 Pharmacist user (pharmacist@medcore.health / Pharmacist@123) & profile created`);
+  console.log(`- 2 Lab Technician users (lab@medcore.health, lab_verifier@medcore.health / Lab@123) & profiles created`);
   console.log(`- 5 Doctors across 3 Departments created with full weekly schedules`);
   console.log(`- 2 Nurses created with active assignments`);
   console.log(`- 10 Realistic Patients created with unique IDs`);
-  console.log(`- 16 Pharmacy Catalog Medicines created`);
-  console.log(`- 27 Medicine Batches with varied expiries and opening stock ledger rows`);
+  console.log(`- 10 Diagnostic Lab Tests with configured multi-parameter reference ranges`);
+  console.log(`- 8 Lab Orders, Samples, Results & Verified Reports created`);
+  console.log(`- 16 Pharmacy Catalog Medicines & 27 Batches created`);
   console.log(`- 5 Prescriptions with mapped items and hold workflows`);
   console.log(`- 1 Dispensing transaction linked to shared billing`);
   console.log(`- 9 Service Catalog billing master items created`);
   console.log(`- 8 Hospital Beds across 3 Wards created`);
   console.log(`- 3 Inpatient Admissions created`);
   console.log(`- 15 Doctor Appointments across today/upcoming/past with checked-in & waiting status`);
-  console.log(`- 5 Invoices (Pending, Partially Paid, Paid) created`);
+  console.log(`- 5 Invoices (Pending, Partially Paid, Paid) created with Lab & Pharmacy line items`);
   console.log(`- 8 Payments across Cash, Card, UPI, and Bank Transfer created`);
   console.log(`- 3 Emergency Registrations created`);
-  console.log(`- Notifications created for Receptionist, Doctor, Nurse, and Pharmacist`);
+  console.log(`- Notifications created for Receptionist, Doctor, Nurse, Pharmacist, and Lab Technician`);
 }
 
 main()
@@ -2103,3 +2942,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+

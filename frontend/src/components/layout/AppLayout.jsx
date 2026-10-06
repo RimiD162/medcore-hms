@@ -11,10 +11,17 @@ import {
   Calendar,
   Activity,
   CheckCircle2,
+  Building2,
+  Pill,
+  Microscope,
+  TestTube,
 } from 'lucide-react';
 import Sidebar from './Sidebar';
 import doctorApi from '../../api/doctorApi';
 import nurseApi from '../../api/nurseApi';
+import receptionistApi from '../../api/receptionistApi';
+import pharmacistApi from '../../api/pharmacistApi';
+import labApi from '../../api/labApi';
 
 export const AppLayout = ({ theme = 'light', onToggleTheme, onShowToast }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -22,29 +29,122 @@ export const AppLayout = ({ theme = 'light', onToggleTheme, onShowToast }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const isLab = location.pathname.startsWith('/app/lab');
+  const isPharmacist = location.pathname.startsWith('/app/pharmacist');
+  const isReceptionist = location.pathname.startsWith('/app/receptionist');
   const isNurse = location.pathname.startsWith('/app/nurse');
 
-  const [userInfo, setUserInfo] = useState(
-    isNurse
+  const currentRole = isLab
+    ? 'LAB_TECHNICIAN'
+    : isPharmacist
+      ? 'PHARMACIST'
+      : isReceptionist
+        ? 'RECEPTIONIST'
+        : isNurse
+          ? 'NURSE'
+          : 'DOCTOR';
+
+  const defaultUserInfo = isLab
+    ? {
+        name: 'Alex Mercer, MLS',
+        specialization: 'Senior Medical Laboratory Scientist',
+        department: 'Clinical Pathology & Biochemistry',
+        avatarUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=200',
+      }
+    : isPharmacist
       ? {
-          name: 'Nurse Sarah Jenkins, RN',
-          specialization: 'Senior Ward Charge Nurse',
-          department: 'Ward 3B',
-          avatarUrl: 'https://images.unsplash.com/photo-1594824813624-9b28a883907c?auto=format&fit=crop&q=80&w=200',
+          name: 'Marcus Vance, RPh',
+          specialization: 'Lead Clinical Pharmacist',
+          department: 'Central Pharmacy & Dispensary',
+          avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200',
         }
-      : {
-          name: 'Dr. Sarah Chen',
-          specialization: 'Cardiology',
-          department: 'OPD-102',
-          avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200',
-        }
-  );
+      : isReceptionist
+        ? {
+            name: 'Rachel Adams',
+            specialization: 'Lead Front Desk Receptionist',
+            department: 'Main Lobby / Admissions',
+            avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
+          }
+        : isNurse
+          ? {
+              name: 'Nurse Sarah Jenkins, RN',
+              specialization: 'Senior Ward Charge Nurse',
+              department: 'Ward 3B',
+              avatarUrl: 'https://images.unsplash.com/photo-1594824813624-9b28a883907c?auto=format&fit=crop&q=80&w=200',
+            }
+          : {
+              name: 'Dr. Sarah Chen',
+              specialization: 'Cardiology',
+              department: 'OPD-102',
+              avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200',
+            };
+
+  const [userInfo, setUserInfo] = useState(defaultUserInfo);
   const [unreadCount, setUnreadCount] = useState(0);
 
   // Fetch profile and unread notifications count based on role
   useEffect(() => {
     async function loadUserContext() {
-      if (isNurse) {
+      if (isLab) {
+        try {
+          const profileRes = await labApi.getProfile();
+          if (profileRes.data) {
+            const p = profileRes.data;
+            setUserInfo({
+              name: p.user?.fullName || 'Alex Mercer, MLS',
+              specialization: p.qualifications?.join(', ') || 'Senior Medical Laboratory Scientist',
+              department: p.section || p.department || 'Clinical Pathology & Biochemistry',
+              avatarUrl: p.user?.avatarUrl || 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=200',
+            });
+          }
+        } catch (e) {
+          // Fallback default lab
+        }
+        try {
+          const notifRes = await labApi.getNotifications({ isRead: 'false' });
+          if (notifRes.data?.unreadCount !== undefined) {
+            setUnreadCount(notifRes.data.unreadCount);
+          }
+        } catch (e) {}
+      } else if (isPharmacist) {
+        try {
+          const profileRes = await pharmacistApi.getProfile();
+          if (profileRes.data) {
+            const p = profileRes.data;
+            setUserInfo({
+              name: p.user?.fullName || 'Marcus Vance, RPh',
+              specialization: p.qualifications?.join(', ') || 'Lead Clinical Pharmacist',
+              department: p.dispensarySection || p.department || 'Central Pharmacy & Dispensary',
+              avatarUrl: p.user?.avatarUrl || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200',
+            });
+          }
+        } catch (e) {}
+        try {
+          const notifRes = await pharmacistApi.getNotifications({ isRead: 'false' });
+          if (notifRes.data?.unreadCount !== undefined) {
+            setUnreadCount(notifRes.data.unreadCount);
+          }
+        } catch (e) {}
+      } else if (isReceptionist) {
+        try {
+          const profileRes = await receptionistApi.getProfile();
+          if (profileRes.data) {
+            const p = profileRes.data;
+            setUserInfo({
+              name: p.user?.fullName || 'Rachel Adams',
+              specialization: 'Lead Front Desk Receptionist',
+              department: p.deskLocation || 'Main Lobby / Admissions',
+              avatarUrl: p.user?.avatarUrl || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
+            });
+          }
+        } catch (e) {}
+        try {
+          const notifRes = await receptionistApi.getNotifications({ isRead: 'false' });
+          if (notifRes.data?.unreadCount !== undefined) {
+            setUnreadCount(notifRes.data.unreadCount);
+          }
+        } catch (e) {}
+      } else if (isNurse) {
         try {
           const profileRes = await nurseApi.getProfile();
           if (profileRes.data) {
@@ -56,18 +156,13 @@ export const AppLayout = ({ theme = 'light', onToggleTheme, onShowToast }) => {
               avatarUrl: p.user?.avatarUrl || 'https://images.unsplash.com/photo-1594824813624-9b28a883907c?auto=format&fit=crop&q=80&w=200',
             });
           }
-        } catch (e) {
-          // Fallback default nurse
-        }
-
+        } catch (e) {}
         try {
           const notifRes = await nurseApi.getUnreadCount();
           if (notifRes.data?.unreadCount !== undefined) {
             setUnreadCount(notifRes.data.unreadCount);
           }
-        } catch (e) {
-          // Fallback
-        }
+        } catch (e) {}
       } else {
         try {
           const profileRes = await doctorApi.getProfile();
@@ -80,23 +175,18 @@ export const AppLayout = ({ theme = 'light', onToggleTheme, onShowToast }) => {
               avatarUrl: p.user?.avatarUrl || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200',
             });
           }
-        } catch (e) {
-          // Fallback default doctor
-        }
-
+        } catch (e) {}
         try {
           const notifRes = await doctorApi.getUnreadCount();
           if (notifRes.data?.unreadCount !== undefined) {
             setUnreadCount(notifRes.data.unreadCount);
           }
-        } catch (e) {
-          // Fallback
-        }
+        } catch (e) {}
       }
     }
 
     loadUserContext();
-  }, [isNurse]);
+  }, [isLab, isPharmacist, isReceptionist, isNurse]);
 
   // Time-of-day greeting generator
   const getGreeting = () => {
@@ -113,10 +203,45 @@ export const AppLayout = ({ theme = 'light', onToggleTheme, onShowToast }) => {
     year: 'numeric',
   });
 
-  const profilePath = isNurse ? '/app/nurse/profile' : '/app/doctor/profile';
-  const notificationsPath = isNurse ? '/app/nurse/notifications' : '/app/doctor/notifications';
-  const quickActionPath = isNurse ? '/app/nurse/vitals' : '/app/doctor/consultations';
-  const quickActionLabel = isNurse ? 'Quick Vitals Check' : 'Consultation Hub';
+  const profilePath = isLab
+    ? '/app/lab/profile'
+    : isPharmacist
+      ? '/app/pharmacist/profile'
+      : isReceptionist
+        ? '/app/receptionist/profile'
+        : isNurse
+          ? '/app/nurse/profile'
+          : '/app/doctor/profile';
+
+  const notificationsPath = isLab
+    ? '/app/lab/notifications'
+    : isPharmacist
+      ? '/app/pharmacist/notifications'
+      : isReceptionist
+        ? '/app/receptionist/notifications'
+        : isNurse
+          ? '/app/nurse/notifications'
+          : '/app/doctor/notifications';
+
+  const quickActionPath = isLab
+    ? '/app/lab/samples'
+    : isPharmacist
+      ? '/app/pharmacist/dispensing'
+      : isReceptionist
+        ? '/app/receptionist/appointments/book'
+        : isNurse
+          ? '/app/nurse/vitals'
+          : '/app/doctor/consultations';
+
+  const quickActionLabel = isLab
+    ? 'Collect Specimen'
+    : isPharmacist
+      ? 'Dispense Rx'
+      : isReceptionist
+        ? 'Book Appointment'
+        : isNurse
+          ? 'Quick Vitals Check'
+          : 'Consultation Hub';
 
   return (
     <div className={`med-app-shell ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`} data-theme={theme}>
@@ -128,7 +253,7 @@ export const AppLayout = ({ theme = 'light', onToggleTheme, onShowToast }) => {
         onCloseMobile={() => setMobileSidebarOpen(false)}
         unreadNotifications={unreadCount}
         user={userInfo}
-        role={isNurse ? 'NURSE' : 'DOCTOR'}
+        role={currentRole}
       />
 
       {/* 2. Main Content Area */}
@@ -151,7 +276,13 @@ export const AppLayout = ({ theme = 'light', onToggleTheme, onShowToast }) => {
               </h2>
               <div className="med-greeting-sub">
                 <span className="med-dept-tag">
-                  {isNurse ? (
+                  {isLab ? (
+                    <Microscope size={13} />
+                  ) : isPharmacist ? (
+                    <Pill size={13} />
+                  ) : isReceptionist ? (
+                    <Building2 size={13} />
+                  ) : isNurse ? (
                     <HeartPulse size={13} />
                   ) : (
                     <Stethoscope size={13} />
@@ -173,7 +304,7 @@ export const AppLayout = ({ theme = 'light', onToggleTheme, onShowToast }) => {
               onClick={() => navigate(quickActionPath)}
               title={quickActionLabel}
             >
-              {isNurse ? <Activity size={15} /> : <Plus size={15} />}
+              {isLab ? <TestTube size={15} /> : isNurse ? <Activity size={15} /> : <Plus size={15} />}
               <span>{quickActionLabel}</span>
             </button>
 
@@ -204,10 +335,10 @@ export const AppLayout = ({ theme = 'light', onToggleTheme, onShowToast }) => {
             <div
               className="med-topbar-avatar-wrap"
               onClick={() => navigate(profilePath)}
-              title={isNurse ? 'View Nurse Profile' : 'View Doctor Profile'}
+              title="View Staff Profile"
             >
               <img
-                src={userInfo.avatarUrl || (isNurse ? 'https://images.unsplash.com/photo-1594824813624-9b28a883907c?auto=format&fit=crop&q=80&w=200' : '/images/doctor.jpg')}
+                src={userInfo.avatarUrl || '/images/doctor.jpg'}
                 alt={userInfo.name}
                 className="med-topbar-avatar"
               />
@@ -218,7 +349,7 @@ export const AppLayout = ({ theme = 'light', onToggleTheme, onShowToast }) => {
 
         {/* Dynamic Nested Page Content */}
         <main className="med-page-content">
-          <Outlet context={{ theme, userInfo, isNurse, onShowToast, setUnreadCount }} />
+          <Outlet context={{ theme, userInfo, isNurse, isLab, isPharmacist, isReceptionist, onShowToast, setUnreadCount }} />
         </main>
       </div>
     </div>
@@ -226,3 +357,4 @@ export const AppLayout = ({ theme = 'light', onToggleTheme, onShowToast }) => {
 };
 
 export default AppLayout;
+

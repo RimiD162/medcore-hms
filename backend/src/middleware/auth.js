@@ -9,9 +9,19 @@ let cachedDemoDoctor = null;
 let cachedDemoNurse = null;
 let cachedDemoReceptionist = null;
 let cachedDemoPharmacist = null;
+let cachedDemoLabTech = null;
+let cachedDemoLabVerifier = null;
 
 async function initDemoCache() {
   try {
+    const labVerifier = await prisma.user.findFirst({
+      where: { role: 'LAB_TECHNICIAN', isActive: true, labTechnicianProfile: { isSeniorVerifier: true } },
+      include: { labTechnicianProfile: true },
+    });
+    const labTech = await prisma.user.findFirst({
+      where: { role: 'LAB_TECHNICIAN', isActive: true, labTechnicianProfile: { isSeniorVerifier: false } },
+      include: { labTechnicianProfile: true },
+    });
     const pharmacist = await prisma.user.findFirst({
       where: { role: 'PHARMACIST', isActive: true },
       include: { pharmacistProfile: true },
@@ -28,6 +38,31 @@ async function initDemoCache() {
       where: { role: 'DOCTOR', isActive: true },
       include: { doctorProfile: true },
     });
+
+    if (labVerifier) {
+      cachedDemoLabVerifier = {
+        id: labVerifier.id,
+        email: labVerifier.email,
+        fullName: labVerifier.fullName,
+        role: labVerifier.role,
+        labTechnicianId: labVerifier.labTechnicianProfile?.id,
+        labTechnicianProfile: labVerifier.labTechnicianProfile,
+        isSeniorVerifier: true,
+      };
+    }
+
+    if (labTech || labVerifier) {
+      const defaultTech = labTech || labVerifier;
+      cachedDemoLabTech = {
+        id: defaultTech.id,
+        email: defaultTech.email,
+        fullName: defaultTech.fullName,
+        role: defaultTech.role,
+        labTechnicianId: defaultTech.labTechnicianProfile?.id,
+        labTechnicianProfile: defaultTech.labTechnicianProfile,
+        isSeniorVerifier: !!defaultTech.labTechnicianProfile?.isSeniorVerifier,
+      };
+    }
 
     if (pharmacist) {
       cachedDemoPharmacist = {
@@ -79,7 +114,7 @@ async function initDemoCache() {
 
 /**
  * Authentication Middleware
- * Decodes JWT token and attaches user, doctorProfile, nurseProfile, receptionistProfile, or pharmacistProfile to req.user
+ * Decodes JWT token and attaches user & profile to req.user
  */
 async function authMiddleware(req, res, next) {
   try {
@@ -92,13 +127,30 @@ async function authMiddleware(req, res, next) {
     }
 
     // ── Placeholder / Demo Fallback ──
-    // In demo mode or if no token provided, resolve role context based on route prefix or token
-    // TODO Phase 1: connect real authenticated user in production
+    const isLabVerifierContext = token === 'demo-lab-verifier-token';
+    const isLabContext = token === 'demo-lab-token' || isLabVerifierContext || req.originalUrl?.includes('/api/v1/lab') || req.baseUrl?.includes('/lab');
     const isPharmacistContext = token === 'demo-pharmacist-token' || req.originalUrl?.includes('/api/v1/pharmacist') || req.baseUrl?.includes('/pharmacist');
     const isReceptionistContext = token === 'demo-receptionist-token' || req.originalUrl?.includes('/api/v1/receptionist') || req.baseUrl?.includes('/receptionist');
     const isNurseContext = token === 'demo-nurse-token' || req.originalUrl?.includes('/api/v1/nurse') || req.baseUrl?.includes('/nurse');
 
-    if (!token || token === 'demo-doctor-token' || token === 'demo-nurse-token' || token === 'demo-receptionist-token' || token === 'demo-pharmacist-token') {
+    if (!token || token.startsWith('demo-')) {
+      if (isLabContext) {
+        if (!cachedDemoLabTech || !cachedDemoLabVerifier) {
+          await initDemoCache();
+        }
+
+        const labUser = isLabVerifierContext
+          ? cachedDemoLabVerifier || cachedDemoLabTech
+          : cachedDemoLabTech || cachedDemoLabVerifier;
+
+        if (!labUser) {
+          return ApiResponse.unauthorized(res, 'No active lab technician found for workspace session');
+        }
+
+        req.user = { ...labUser };
+        return next();
+      }
+
       if (isPharmacistContext) {
         if (!cachedDemoPharmacist) {
           await initDemoCache();
@@ -155,7 +207,13 @@ async function authMiddleware(req, res, next) {
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId || decoded.id },
-      include: { doctorProfile: true, nurseProfile: true, receptionistProfile: true, pharmacistProfile: true },
+      include: {
+        doctorProfile: true,
+        nurseProfile: true,
+        receptionistProfile: true,
+        pharmacistProfile: true,
+        labTechnicianProfile: true,
+      },
     });
 
     if (!user || !user.isActive) {
@@ -175,6 +233,9 @@ async function authMiddleware(req, res, next) {
       receptionistProfile: user.receptionistProfile,
       pharmacistId: user.pharmacistProfile?.id,
       pharmacistProfile: user.pharmacistProfile,
+      labTechnicianId: user.labTechnicianProfile?.id,
+      labTechnicianProfile: user.labTechnicianProfile,
+      isSeniorVerifier: !!user.labTechnicianProfile?.isSeniorVerifier,
     };
 
     next();
@@ -188,7 +249,7 @@ async function authMiddleware(req, res, next) {
 
 /**
  * Role-based Authorization Middleware
- * Enforces specified role (e.g., 'DOCTOR', 'NURSE', 'RECEPTIONIST')
+ * Enforces specified role (e.g., 'DOCTOR', 'NURSE', 'RECEPTIONIST', 'PHARMACIST', 'LAB_TECHNICIAN')
  */
 function requireRole(requiredRole) {
   return (req, res, next) => {
@@ -255,8 +316,7 @@ async function authorizePatientAccess(req, res, next) {
 }
 
 /**
- * Access Control Service Function
- * Checks whether a nurse is actively assigned to a patient
+ * Access Control Service Function for Nurses
  */
 async function canNurseAccessPatient(nurseId, patientId) {
   if (!nurseId || !patientId) return false;
@@ -273,8 +333,22 @@ async function canNurseAccessPatient(nurseId, patientId) {
 }
 
 /**
+ * Access Control Service Function for Lab Technicians
+ * A lab user can reach a patient only through an active lab order/sample/result relationship
+ */
+async function canLabAccessPatient(patientId) {
+  if (!patientId) return false;
+
+  const order = await prisma.labTestOrder.findFirst({
+    where: { patientId },
+    select: { id: true },
+  });
+
+  return !!order;
+}
+
+/**
  * Nurse-Patient Assignment Authorization Guard
- * Ensures nurse only accesses assigned patients
  */
 async function authorizeNursePatientAccess(req, res, next) {
   try {
@@ -313,11 +387,62 @@ async function authorizeNursePatientAccess(req, res, next) {
   }
 }
 
+/**
+ * Lab-Patient Relationship Authorization Guard
+ */
+async function authorizeLabPatientAccess(req, res, next) {
+  try {
+    const patientId = req.params.patientId || req.body.patientId || req.query.patientId;
+
+    if (!patientId) {
+      return next();
+    }
+
+    const patient = await prisma.patient.findUnique({
+      where: { id: patientId },
+    });
+
+    if (!patient) {
+      return ApiResponse.notFound(res, 'Patient record not found');
+    }
+
+    const hasAccess = await canLabAccessPatient(patientId);
+
+    if (!hasAccess && req.user.role !== 'ADMIN') {
+      return ApiResponse.forbidden(
+        res,
+        'Unauthorized: No laboratory test orders exist for this patient'
+      );
+    }
+
+  } catch (err) {
+    next(err);
+  }
+}
+
+function authorize(...roles) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return ApiResponse.unauthorized(res, 'Authentication required');
+    }
+    if (roles.length > 0 && !roles.includes(req.user.role) && req.user.role !== 'ADMIN') {
+      return ApiResponse.forbidden(res, `Access denied: requires one of [${roles.join(', ')}]`);
+    }
+    next();
+  };
+}
+
+
 module.exports = {
   authMiddleware,
+  authenticate: authMiddleware,
   requireRole,
+  authorize,
   authorizePatientAccess,
   authorizeNursePatientAccess,
+  authorizeLabPatientAccess,
   canNurseAccessPatient,
+  canLabAccessPatient,
   initDemoCache,
 };
+

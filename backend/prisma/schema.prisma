@@ -60,6 +60,7 @@ model User {
   nurseProfile           NurseProfile?
   receptionistProfile    ReceptionistProfile?
   pharmacistProfile      PharmacistProfile?
+  labTechnicianProfile   LabTechnicianProfile?
   notifications          Notification[]
   auditLogs              AuditLog[]
   receivedPayments       Payment[]               @relation("PaymentReceiver")
@@ -71,6 +72,17 @@ model User {
   stockReceipts          StockReceipt[]          @relation("StockReceiptReceiver")
   dispensings            Dispensing[]            @relation("DispensingPharmacist")
   heldPrescriptions      Prescription[]          @relation("PrescriptionHolder")
+  collectedSamples       LabSample[]             @relation("SampleCollector")
+  receivedSamples        LabSample[]             @relation("SampleReceiver")
+  processingStartedSamples LabSample[]           @relation("SampleProcessor")
+  processingCompletedSamples LabSample[]         @relation("SampleCompleter")
+  rejectedSamples        LabSample[]             @relation("SampleRejector")
+  enteredResults         LabResult[]             @relation("ResultEnterer")
+  verifiedResults        LabResult[]             @relation("ResultVerifier")
+  correctedResults       LabResultCorrection[]   @relation("ResultCorrector")
+  createdReports         LabReport[]             @relation("ReportCreator")
+  verifiedReports        LabReport[]             @relation("ReportVerifier")
+  releasedReports        LabReport[]             @relation("ReportReleaser")
 
   @@index([email])
   @@index([hospitalId])
@@ -99,7 +111,7 @@ model DoctorProfile {
   consultations   Consultation[]
   medicalRecords  MedicalRecord[]
   prescriptions   Prescription[]
-  orderedReports  LabReport[]
+  labTestOrders   LabTestOrder[]
   followUps       FollowUp[]
 
   @@map("doctor_profiles")
@@ -229,7 +241,8 @@ model Patient {
   consultations             Consultation[]
   medicalRecords            MedicalRecord[]
   prescriptions             Prescription[]
-  labReports                LabReport[]
+  labTestOrders             LabTestOrder[]
+  labSamples                LabSample[]
   documents                 Document[]
   followUps                 FollowUp[]
   nurseAssignments          NurseAssignment[]
@@ -601,19 +614,21 @@ model Invoice {
 }
 
 model InvoiceItem {
-  id               String          @id @default(uuid())
-  invoiceId        String          @map("invoice_id")
-  invoice          Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  serviceCatalogId String?         @map("service_catalog_id")
-  serviceCatalog   ServiceCatalog? @relation(fields: [serviceCatalogId], references: [id], onDelete: SetNull)
-  serviceName      String          @map("service_name")
-  category         String          @default("General")
-  source           String          @default("GENERAL") // GENERAL, CLINICAL, PHARMACY
-  dispensingItemId String?         @map("dispensing_item_id")
-  unitPrice        Decimal         @map("unit_price") @db.Decimal(10, 2)
-  quantity         Int             @default(1)
-  totalPrice       Decimal         @map("total_price") @db.Decimal(10, 2)
-  createdAt        DateTime        @default(now()) @map("created_at")
+  id                 String            @id @default(uuid())
+  invoiceId          String            @map("invoice_id")
+  invoice            Invoice           @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  serviceCatalogId   String?           @map("service_catalog_id")
+  serviceCatalog     ServiceCatalog?   @relation(fields: [serviceCatalogId], references: [id], onDelete: SetNull)
+  serviceName        String            @map("service_name")
+  category           String            @default("General")
+  source             String            @default("GENERAL") // GENERAL, CLINICAL, PHARMACY, LAB
+  dispensingItemId   String?           @map("dispensing_item_id")
+  labTestOrderItemId String?           @map("lab_test_order_item_id")
+  labTestOrderItem   LabTestOrderItem? @relation(fields: [labTestOrderItemId], references: [id], onDelete: SetNull)
+  unitPrice          Decimal           @map("unit_price") @db.Decimal(10, 2)
+  quantity           Int               @default(1)
+  totalPrice         Decimal           @map("total_price") @db.Decimal(10, 2)
+  createdAt          DateTime          @default(now()) @map("created_at")
 
   @@index([invoiceId])
   @@index([source])
@@ -689,39 +704,333 @@ model EmergencyRegistration {
   @@map("emergency_registrations")
 }
 
-// ── Lab Reports & Documents ───────────────────────────────────
-enum LabStatus {
+// ── Laboratory Diagnostics Ecosystem ──────────────────────────
+enum LabSampleType {
+  BLOOD
+  SERUM
+  PLASMA
+  URINE
+  STOOL
+  SPUTUM
+  SWAB
+  CSF
+  TISSUE
+  OTHER
+}
+
+enum LabSampleStatus {
+  PENDING
+  COLLECTED
+  RECEIVED
+  PROCESSING
+  PROCESSED
+  REJECTED
+  CANCELLED
+}
+
+enum LabOrderStatus {
   ORDERED
+  SAMPLE_PENDING
   SAMPLE_COLLECTED
   PROCESSING
+  RESULT_PENDING
   COMPLETED
+  CANCELLED
+}
+
+enum LabOrderItemStatus {
+  ORDERED
+  SAMPLE_PENDING
+  SAMPLE_COLLECTED
+  PROCESSING
+  RESULT_PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum LabOrderPriority {
+  ROUTINE
+  URGENT
+  STAT
+}
+
+enum LabResultStatus {
+  PENDING
+  ENTERED
+  VERIFIED
+  RELEASED
+  REJECTED
+}
+
+enum LabResultType {
+  NUMERIC
+  TEXT
+  POSITIVE_NEGATIVE
+  QUALITATIVE
+}
+
+enum LabResultFlag {
+  NORMAL
+  LOW
+  HIGH
+  CRITICAL
+  NOT_EVALUATED
+}
+
+enum LabReportStatus {
+  DRAFT
+  COMPLETED
+  VERIFIED
+  RELEASED
+}
+
+model LabTechnicianProfile {
+  id               String   @id @default(uuid())
+  userId           String   @unique @map("user_id")
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employeeId       String   @unique @map("employee_id")
+  department       String   @default("Clinical Pathology & Biochemistry")
+  licenseNumber    String?  @map("license_number")
+  shift            String   @default("Morning (08:00 - 16:00)")
+  isSeniorVerifier Boolean  @default(false) @map("is_senior_verifier")
+  status           String   @default("On Duty") // On Duty, Off Duty, On Break
+  phone            String?
+  bio              String?
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("lab_technician_profiles")
+}
+
+model LabTest {
+  id             String             @id @default(uuid())
+  code           String             @unique // e.g. "LAB-CBC", "LAB-LFT"
+  name           String
+  category       String             // Hematology, Biochemistry, Microbiology, Serology, Urinalysis
+  description    String?
+  sampleType     LabSampleType      @default(BLOOD) @map("sample_type")
+  sampleVolume   String?            @map("sample_volume") // e.g. "3 mL"
+  processingTime Int                @default(60) @map("processing_time") // Minutes
+  price          Decimal            @db.Decimal(10, 2)
+  isActive       Boolean            @default(true) @map("is_active")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  parameters     LabTestParameter[]
+  orderItems     LabTestOrderItem[]
+
+  @@index([name])
+  @@index([category, isActive])
+  @@map("lab_tests")
+}
+
+model LabTestParameter {
+  id              String         @id @default(uuid())
+  labTestId       String         @map("lab_test_id")
+  labTest         LabTest        @relation(fields: [labTestId], references: [id], onDelete: Cascade)
+  name            String         // e.g. "Hemoglobin", "WBC Count", "Platelets"
+  resultType      LabResultType  @default(NUMERIC) @map("result_type")
+  unit            String?        // e.g. "g/dL", "10^3/uL", "mg/dL"
+  displayOrder    Int            @default(1) @map("display_order")
+  low             Decimal?       @db.Decimal(10, 2)
+  high            Decimal?       @db.Decimal(10, 2)
+  criticalLow     Decimal?       @map("critical_low") @db.Decimal(10, 2)
+  criticalHigh    Decimal?       @map("critical_high") @db.Decimal(10, 2)
+  allowedOptions  String[]       @default([]) @map("allowed_options") // For QUALITATIVE / POSITIVE_NEGATIVE
+  genderSpecific  String?        @map("gender_specific") // "MALE", "FEMALE", or null
+  ageMin          Int?           @map("age_min")
+  ageMax          Int?           @map("age_max")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  resultValues    LabResultValue[]
+
+  @@index([labTestId, displayOrder])
+  @@map("lab_test_parameters")
+}
+
+model LabTestOrder {
+  id                 String           @id @default(uuid())
+  orderNumber        String           @unique @map("order_number") // e.g. "ORD-2026-0001"
+  patientId          String           @map("patient_id")
+  patient            Patient          @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  orderingDoctorId   String           @map("ordering_doctor_id")
+  orderingDoctor     DoctorProfile    @relation(fields: [orderingDoctorId], references: [id], onDelete: Cascade)
+  consultationId     String?          @map("consultation_id")
+  appointmentId      String?          @map("appointment_id")
+  status             LabOrderStatus   @default(ORDERED)
+  priority           LabOrderPriority @default(ROUTINE)
+  clinicalIndication String?          @map("clinical_indication")
+  orderedAt          DateTime         @default(now()) @map("ordered_at")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  items              LabTestOrderItem[]
+  samples            LabSample[]
+  reports            LabReport[]
+
+  @@index([patientId, orderedAt])
+  @@index([orderingDoctorId, status])
+  @@index([status, priority])
+  @@map("lab_test_orders")
+}
+
+model LabTestOrderItem {
+  id               String             @id @default(uuid())
+  orderId          String             @map("order_id")
+  order            LabTestOrder       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  labTestId        String             @map("lab_test_id")
+  labTest          LabTest            @relation(fields: [labTestId], references: [id], onDelete: Cascade)
+  testNameSnapshot String             @map("test_name_snapshot")
+  priceSnapshot    Decimal            @map("price_snapshot") @db.Decimal(10, 2)
+  status           LabOrderItemStatus @default(ORDERED)
+  sampleId         String?            @map("sample_id")
+  sample           LabSample?         @relation(fields: [sampleId], references: [id], onDelete: SetNull)
+  cancelReason     String?            @map("cancel_reason")
+  cancelledAt      DateTime?          @map("cancelled_at")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+
+  results          LabResult[]
+  invoiceItems     InvoiceItem[]
+
+  @@index([orderId])
+  @@index([labTestId])
+  @@map("lab_test_order_items")
+}
+
+model LabSample {
+  id                    String          @id @default(uuid())
+  sampleCode            String          @unique @map("sample_code") // e.g. "LAB-SMP-000001"
+  orderId               String          @map("order_id")
+  order                 LabTestOrder    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  patientId             String          @map("patient_id")
+  patient               Patient         @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  sampleType            LabSampleType   @map("sample_type")
+  status                LabSampleStatus @default(PENDING)
+  collectedAt           DateTime?       @map("collected_at")
+  collectedById         String?         @map("collected_by_id")
+  collectedBy           User?           @relation("SampleCollector", fields: [collectedById], references: [id], onDelete: SetNull)
+  sampleCondition       String?         @map("sample_condition") // Good, Hemolyzed, Lipemic, Clotted
+  collectionNotes       String?         @map("collection_notes")
+  receivedAt            DateTime?       @map("received_at")
+  receivedById          String?         @map("received_by_id")
+  receivedBy            User?           @relation("SampleReceiver", fields: [receivedById], references: [id], onDelete: SetNull)
+  processingStartedAt   DateTime?       @map("processing_started_at")
+  processingStartedById String?         @map("processing_started_by_id")
+  processingStartedBy   User?           @relation("SampleProcessor", fields: [processingStartedById], references: [id], onDelete: SetNull)
+  processingCompletedAt DateTime?       @map("processing_completed_at")
+  processingCompletedById String?       @map("processing_completed_by_id")
+  processingCompletedBy User?           @relation("SampleCompleter", fields: [processingCompletedById], references: [id], onDelete: SetNull)
+  rejectionReason       String?         @map("rejection_reason")
+  rejectedAt            DateTime?       @map("rejected_at")
+  rejectedById          String?         @map("rejected_by_id")
+  rejectedBy            User?           @relation("SampleRejector", fields: [rejectedById], references: [id], onDelete: SetNull)
+  recollectionOfId      String?         @map("recollection_of_id")
+  recollectionOf        LabSample?      @relation("Recollections", fields: [recollectionOfId], references: [id], onDelete: SetNull)
+  recollections         LabSample[]     @relation("Recollections")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  updatedAt             DateTime        @updatedAt @map("updated_at")
+
+  orderItems            LabTestOrderItem[]
+  results               LabResult[]
+
+  @@index([orderId])
+  @@index([patientId])
+  @@index([status])
+  @@map("lab_samples")
+}
+
+model LabResult {
+  id              String          @id @default(uuid())
+  orderItemId     String          @map("order_item_id")
+  orderItem       LabTestOrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  sampleId        String          @map("sample_id")
+  sample          LabSample       @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+  status          LabResultStatus @default(PENDING)
+  version         Int             @default(1)
+  enteredById     String?         @map("entered_by_id")
+  enteredBy       User?           @relation("ResultEnterer", fields: [enteredById], references: [id], onDelete: SetNull)
+  enteredAt       DateTime?       @map("entered_at")
+  verifiedById    String?         @map("verified_by_id")
+  verifiedBy      User?           @relation("ResultVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
+  verifiedAt      DateTime?       @map("verified_at")
+  rejectionReason String?         @map("rejection_reason")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  values          LabResultValue[]
+  corrections     LabResultCorrection[]
+
+  @@unique([orderItemId, version])
+  @@index([orderItemId, status])
+  @@index([sampleId])
+  @@map("lab_results")
+}
+
+model LabResultValue {
+  id                     String           @id @default(uuid())
+  labResultId            String           @map("lab_result_id")
+  labResult              LabResult        @relation(fields: [labResultId], references: [id], onDelete: Cascade)
+  parameterId            String           @map("parameter_id")
+  parameter              LabTestParameter @relation(fields: [parameterId], references: [id], onDelete: Cascade)
+  numericValue           Decimal?         @map("numeric_value") @db.Decimal(10, 2)
+  textValue              String?          @map("text_value")
+  unitSnapshot           String?          @map("unit_snapshot")
+  referenceRangeSnapshot String?          @map("reference_range_snapshot")
+  flag                   LabResultFlag    @default(NOT_EVALUATED)
+  createdAt              DateTime         @default(now()) @map("created_at")
+
+  @@index([labResultId])
+  @@index([parameterId])
+  @@map("lab_result_values")
+}
+
+model LabResultCorrection {
+  id              String    @id @default(uuid())
+  labResultId     String    @map("lab_result_id")
+  labResult       LabResult @relation(fields: [labResultId], references: [id], onDelete: Cascade)
+  originalValues  Json      @map("original_values")
+  correctedValues Json      @map("corrected_values")
+  reason          String
+  correctedById   String?   @map("corrected_by_id")
+  correctedBy     User?     @relation("ResultCorrector", fields: [correctedById], references: [id], onDelete: SetNull)
+  correctedAt     DateTime  @default(now()) @map("corrected_at")
+
+  @@index([labResultId])
+  @@map("lab_result_corrections")
 }
 
 model LabReport {
-  id                String        @id @default(uuid())
-  reportNumber      String        @unique @map("report_number") // "LAB-2026-501"
-  patientId         String        @map("patient_id")
-  patient           Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  orderedById       String        @map("ordered_by_id")
-  orderedBy         DoctorProfile @relation(fields: [orderedById], references: [id], onDelete: Cascade)
-  testName          String        @map("test_name")
-  category          String        @default("Clinical Pathology") // Biochemistry, Hematology, Radiology
-  status            LabStatus     @default(ORDERED)
-  orderedDate       DateTime      @default(now()) @map("ordered_date")
-  resultDate        DateTime?     @map("result_date")
-  resultSummary     String?       @map("result_summary")
-  referenceRange    String?       @map("reference_range")
-  documentReference String?       @map("document_reference")
-  doctorNotes       String?       @map("doctor_notes")
-  isReviewed        Boolean       @default(false) @map("is_reviewed")
-  reviewedAt        DateTime?     @map("reviewed_at")
-  createdAt         DateTime      @default(now()) @map("created_at")
-  updatedAt         DateTime      @updatedAt @map("updated_at")
+  id              String          @id @default(uuid())
+  orderId         String          @map("order_id")
+  order           LabTestOrder    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  reportNumber    String          @unique @map("report_number") // e.g. "REP-2026-0001"
+  status          LabReportStatus @default(DRAFT)
+  revision        Int             @default(1)
+  generatedAt     DateTime?       @map("generated_at")
+  verifiedAt      DateTime?       @map("verified_at")
+  releasedAt      DateTime?       @map("released_at")
+  createdById     String?         @map("created_by_id")
+  createdBy       User?           @relation("ReportCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  verifiedById    String?         @map("verified_by_id")
+  verifiedBy      User?           @relation("ReportVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
+  releasedById    String?         @map("released_by_id")
+  releasedBy      User?           @relation("ReportReleaser", fields: [releasedById], references: [id], onDelete: SetNull)
+  contentSnapshot Json?           @map("content_snapshot") // Immutable snapshot payload upon release
+  isAmended       Boolean         @default(false) @map("is_amended")
+  amendedAt       DateTime?       @map("amended_at")
+  doctorNotes     String?         @map("doctor_notes") // Doctor review interpretation
+  isReviewed      Boolean         @default(false) @map("is_reviewed")
+  reviewedAt      DateTime?       @map("reviewed_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
 
-  documents         Document[]
+  documents       Document[]
 
-  @@index([patientId])
-  @@index([orderedById, status])
+  @@unique([orderId, revision])
+  @@index([orderId, status])
+  @@index([reportNumber])
   @@map("lab_reports")
 }
 

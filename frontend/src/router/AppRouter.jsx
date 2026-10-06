@@ -68,6 +68,24 @@ import PharmacistSalesPage from '../pages/pharmacist/PharmacistSalesPage';
 import PharmacistNotificationsPage from '../pages/pharmacist/PharmacistNotificationsPage';
 import PharmacistProfilePage from '../pages/pharmacist/PharmacistProfilePage';
 
+// Lab Technician Pages
+import LabDashboardPage from '../pages/lab/LabDashboardPage';
+import LabCatalogPage from '../pages/lab/LabCatalogPage';
+import LabCatalogCreatePage from '../pages/lab/LabCatalogCreatePage';
+import LabCatalogDetailPage from '../pages/lab/LabCatalogDetailPage';
+import LabOrdersPage from '../pages/lab/LabOrdersPage';
+import LabOrderDetailPage from '../pages/lab/LabOrderDetailPage';
+import LabSamplesPage from '../pages/lab/LabSamplesPage';
+import LabSampleDetailPage from '../pages/lab/LabSampleDetailPage';
+import LabResultWorklistPage from '../pages/lab/LabResultWorklistPage';
+import LabResultEntryPage from '../pages/lab/LabResultEntryPage';
+import LabReportsPage from '../pages/lab/LabReportsPage';
+import LabReportDetailPage from '../pages/lab/LabReportDetailPage';
+import LabCriticalAlertsPage from '../pages/lab/LabCriticalAlertsPage';
+import LabHistoryAuditPage from '../pages/lab/LabHistoryAuditPage';
+import LabNotificationsPage from '../pages/lab/LabNotificationsPage';
+import LabProfilePage from '../pages/lab/LabProfilePage';
+
 export const AppRouter = () => {
   const [theme, setTheme] = useState('light');
   const [showPatientModal, setShowPatientModal] = useState(false);
@@ -112,6 +130,10 @@ export const AppRouter = () => {
       localStorage.setItem('medcore_auth_token', 'demo-pharmacist-token');
       navigate('/app/pharmacist');
       showToast(`Welcome Marcus Vance, RPh! Logged in as ${role.title}.`);
+    } else if (role.id === 'lab_tech' || role.id === 'lab') {
+      localStorage.setItem('medcore_auth_token', 'demo-lab-token');
+      navigate('/app/lab');
+      showToast(`Welcome Alex Mercer, MLS! Logged in as ${role.title}.`);
     } else {
       navigate('/staff-roles');
       showToast(`Logged in as ${role.title} (${role.subtitle})`);
@@ -267,6 +289,36 @@ export const AppRouter = () => {
           <Route path="profile" element={<PharmacistProfilePage />} />
         </Route>
 
+        {/* 7. Laboratory Technician Module Shell & Nested Routes */}
+        <Route
+          path="/app/lab"
+          element={
+            <AppLayout
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              onShowToast={showToast}
+            />
+          }
+        >
+          <Route index element={<LabDashboardPage />} />
+          <Route path="dashboard" element={<LabDashboardPage />} />
+          <Route path="catalog" element={<LabCatalogPage />} />
+          <Route path="catalog/new" element={<LabCatalogCreatePage />} />
+          <Route path="catalog/:id" element={<LabCatalogDetailPage />} />
+          <Route path="orders" element={<LabOrdersPage />} />
+          <Route path="orders/:id" element={<LabOrderDetailPage />} />
+          <Route path="samples" element={<LabSamplesPage />} />
+          <Route path="samples/:id" element={<LabSampleDetailPage />} />
+          <Route path="worklist" element={<LabResultWorklistPage />} />
+          <Route path="worklist/:itemId" element={<LabResultEntryPage />} />
+          <Route path="reports" element={<LabReportsPage />} />
+          <Route path="reports/:id" element={<LabReportDetailPage />} />
+          <Route path="critical-alerts" element={<LabCriticalAlertsPage />} />
+          <Route path="audit-history" element={<LabHistoryAuditPage />} />
+          <Route path="notifications" element={<LabNotificationsPage />} />
+          <Route path="profile" element={<LabProfilePage />} />
+        </Route>
+
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -300,3 +352,4 @@ export const AppRouter = () => {
 };
 
 export default AppRouter;
+

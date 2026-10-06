@@ -36,6 +36,9 @@ export const RoleCard = ({ role, onOpenWorkspace }) => {
     } else if (role.id === 'pharmacist') {
       localStorage.setItem('medcore_auth_token', 'demo-pharmacist-token');
       navigate('/app/pharmacist');
+    } else if (role.id === 'lab_tech' || role.id === 'lab') {
+      localStorage.setItem('medcore_auth_token', 'demo-lab-token');
+      navigate('/app/lab');
     } else {
       onOpenWorkspace(role);
     }
