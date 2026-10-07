@@ -59,35 +59,34 @@ async function generateAppointmentNumber(tx = prisma) {
  * Generate unique invoice number
  * e.g. INV-2026-0001
  */
-async function generateInvoiceNumber(tx = prisma) {
+async function generateInvoiceNumber(txArg = prisma) {
+  const tx = (txArg && txArg.invoice) ? txArg : prisma;
   const currentYear = new Date().getFullYear();
   const prefix = `INV-${currentYear}-`;
 
   const invoices = await tx.invoice.findMany({
+    where: { invoiceNumber: { startsWith: prefix } },
     select: { invoiceNumber: true },
   });
 
-  let maxSeq = 0;
-  for (const inv of invoices) {
-    if (!inv.invoiceNumber) continue;
-    const numMatches = inv.invoiceNumber.match(/\d+/g);
-    if (numMatches && numMatches.length > 0) {
-      const lastNum = parseInt(numMatches[numMatches.length - 1], 10);
-      if (!isNaN(lastNum) && lastNum > maxSeq) {
-        maxSeq = lastNum;
-      }
-    }
+  const maxSeq = getMaxSequence(invoices, 'invoiceNumber', prefix);
+  let seq = maxSeq + 1;
+  let candidate = `${prefix}${String(seq).padStart(4, '0')}`;
+
+  while (await tx.invoice.findUnique({ where: { invoiceNumber: candidate } })) {
+    seq++;
+    candidate = `${prefix}${String(seq).padStart(4, '0')}`;
   }
 
-  const seq = maxSeq + 1;
-  return `${prefix}${String(seq).padStart(4, '0')}`;
+  return candidate;
 }
 
 /**
  * Generate unique payment receipt number
  * e.g. PAY-2026-0001
  */
-async function generatePaymentNumber(tx = prisma) {
+async function generatePaymentNumber(txArg = prisma) {
+  const tx = (txArg && txArg.payment) ? txArg : prisma;
   const currentYear = new Date().getFullYear();
   const prefix = `PAY-${currentYear}-`;
 
@@ -97,8 +96,67 @@ async function generatePaymentNumber(tx = prisma) {
   });
 
   const maxSeq = getMaxSequence(payments, 'paymentNumber', prefix);
-  const seq = maxSeq + 1;
-  return `${prefix}${String(seq).padStart(4, '0')}`;
+  let seq = maxSeq + 1;
+  let candidate = `${prefix}${String(seq).padStart(4, '0')}`;
+
+  while (await tx.payment.findUnique({ where: { paymentNumber: candidate } })) {
+    seq++;
+    candidate = `${prefix}${String(seq).padStart(4, '0')}`;
+  }
+
+  return candidate;
+}
+
+/**
+ * Generate unique refund number
+ * e.g. REF-2026-0001
+ */
+async function generateRefundNumber(txArg = prisma) {
+  const tx = (txArg && txArg.refund) ? txArg : prisma;
+  const currentYear = new Date().getFullYear();
+  const prefix = `REF-${currentYear}-`;
+
+  const refunds = await tx.refund.findMany({
+    where: { refundNumber: { startsWith: prefix } },
+    select: { refundNumber: true },
+  });
+
+  const maxSeq = getMaxSequence(refunds, 'refundNumber', prefix);
+  let seq = maxSeq + 1;
+  let candidate = `${prefix}${String(seq).padStart(4, '0')}`;
+
+  while (await tx.refund.findUnique({ where: { refundNumber: candidate } })) {
+    seq++;
+    candidate = `${prefix}${String(seq).padStart(4, '0')}`;
+  }
+
+  return candidate;
+}
+
+/**
+ * Generate unique expense number
+ * e.g. EXP-2026-0001
+ */
+async function generateExpenseNumber(txArg = prisma) {
+  const tx = (txArg && txArg.expense) ? txArg : prisma;
+  const currentYear = new Date().getFullYear();
+  const prefix = `EXP-${currentYear}-`;
+
+  const expenses = await tx.expense.findMany({
+    where: { expenseNumber: { startsWith: prefix } },
+    select: { expenseNumber: true },
+  });
+
+  const maxSeq = getMaxSequence(expenses, 'expenseNumber', prefix);
+  let seq = maxSeq + 1;
+  let candidate = `${prefix}${String(seq).padStart(4, '0')}`;
+
+  while (await tx.expense.findUnique({ where: { expenseNumber: candidate } })) {
+    seq++;
+    candidate = `${prefix}${String(seq).padStart(4, '0')}`;
+  }
+
+  return candidate;
 }
 
 /**
@@ -299,6 +357,8 @@ module.exports = {
   generateAppointmentNumber,
   generateInvoiceNumber,
   generatePaymentNumber,
+  generateRefundNumber,
+  generateExpenseNumber,
   generateEmergencyNumber,
   generateMedicineCode,
   generateDispensingNumber,

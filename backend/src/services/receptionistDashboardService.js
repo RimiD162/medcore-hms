@@ -61,10 +61,11 @@ class ReceptionistDashboardService {
         },
       }),
 
-      // 6. Today's Collections (Payments with paidAt today)
+      // 6. Today's Collections (Completed Payments with paidAt today)
       prisma.payment.findMany({
         where: {
           paidAt: { gte: today, lt: tomorrow },
+          status: 'COMPLETED',
         },
         select: {
           amount: true,

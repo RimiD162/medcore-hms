@@ -33,6 +33,10 @@ import {
   ClipboardCheck,
   FilePlus,
   TestTube,
+  RotateCcw,
+  ArrowLeftRight,
+  BarChart3,
+  FileSpreadsheet,
 } from 'lucide-react';
 import Logo from '../Logo';
 
@@ -108,6 +112,20 @@ const labNavItems = [
   { path: '/app/lab/profile', label: 'Staff Profile', icon: User },
 ];
 
+const accountantNavItems = [
+  { path: '/app/accountant', label: 'Finance Dashboard', icon: LayoutDashboard, exact: true },
+  { path: '/app/accountant/invoices', label: 'Invoices & Billing', icon: Receipt, exact: true },
+  { path: '/app/accountant/invoices/new', label: 'Create Invoice', icon: FilePlus },
+  { path: '/app/accountant/payments', label: 'Payment Registry', icon: Wallet },
+  { path: '/app/accountant/outstanding', label: 'Outstanding & Aging', icon: Clock },
+  { path: '/app/accountant/refunds', label: 'Refunds & Returns', icon: RotateCcw },
+  { path: '/app/accountant/expenses', label: 'Hospital Expenses', icon: CreditCard },
+  { path: '/app/accountant/transactions', label: 'Ledger Stream', icon: ArrowLeftRight },
+  { path: '/app/accountant/reports', label: 'Financial Reports', icon: BarChart3 },
+  { path: '/app/accountant/notifications', label: 'Notifications', icon: Bell, hasBadge: true },
+  { path: '/app/accountant/profile', label: 'Staff Profile', icon: User },
+];
+
 export const Sidebar = ({
   collapsed = false,
   onToggleCollapse,
@@ -115,80 +133,94 @@ export const Sidebar = ({
   onCloseMobile,
   unreadNotifications = 0,
   user = null,
-  role = 'DOCTOR', // 'DOCTOR' | 'NURSE' | 'RECEPTIONIST' | 'PHARMACIST' | 'LAB_TECHNICIAN'
+  role = 'DOCTOR', // 'DOCTOR' | 'NURSE' | 'RECEPTIONIST' | 'PHARMACIST' | 'LAB_TECHNICIAN' | 'ACCOUNTANT'
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const isAccountant = role === 'ACCOUNTANT' || role === 'accountant' || location.pathname.startsWith('/app/accountant');
   const isLab = role === 'LAB_TECHNICIAN' || role === 'lab_tech' || location.pathname.startsWith('/app/lab');
   const isPharmacist = role === 'PHARMACIST' || location.pathname.startsWith('/app/pharmacist');
   const isReceptionist = role === 'RECEPTIONIST' || location.pathname.startsWith('/app/receptionist');
   const isNurse = role === 'NURSE' || location.pathname.startsWith('/app/nurse');
   
-  const navItems = isLab
-    ? labNavItems
-    : isPharmacist
-      ? pharmacistNavItems
-      : isReceptionist 
-        ? receptionistNavItems 
-        : isNurse 
-          ? nurseNavItems 
-          : doctorNavItems;
+  const navItems = isAccountant
+    ? accountantNavItems
+    : isLab
+      ? labNavItems
+      : isPharmacist
+        ? pharmacistNavItems
+        : isReceptionist 
+          ? receptionistNavItems 
+          : isNurse 
+            ? nurseNavItems 
+            : doctorNavItems;
 
-  const workspaceTitle = isLab
-    ? 'Diagnostic Laboratory'
-    : isPharmacist
-      ? 'Central Pharmacy'
-      : isReceptionist 
-        ? 'Reception Desk' 
-        : isNurse 
-          ? 'Nurse Station' 
-          : 'Doctor Workspace';
+  const workspaceTitle = isAccountant
+    ? 'Finance & Accounting'
+    : isLab
+      ? 'Diagnostic Laboratory'
+      : isPharmacist
+        ? 'Central Pharmacy'
+        : isReceptionist 
+          ? 'Reception Desk' 
+          : isNurse 
+            ? 'Nurse Station' 
+            : 'Doctor Workspace';
 
-  const profileRoute = isLab
-    ? '/app/lab/profile'
-    : isPharmacist
-      ? '/app/pharmacist/profile'
-      : isReceptionist 
-        ? '/app/receptionist/profile' 
-        : isNurse 
-          ? '/app/nurse/profile' 
-          : '/app/doctor/profile';
+  const profileRoute = isAccountant
+    ? '/app/accountant/profile'
+    : isLab
+      ? '/app/lab/profile'
+      : isPharmacist
+        ? '/app/pharmacist/profile'
+        : isReceptionist 
+          ? '/app/receptionist/profile' 
+          : isNurse 
+            ? '/app/nurse/profile' 
+            : '/app/doctor/profile';
 
-  const defaultUser = isLab
+  const defaultUser = isAccountant
     ? {
-        name: 'Alex Mercer, MLS',
-        specialization: 'Senior Medical Laboratory Scientist',
-        department: 'Clinical Pathology & Biochemistry',
-        avatarUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=200',
+        name: 'David Sterling, CA',
+        specialization: 'Senior Financial Controller',
+        department: 'Hospital Revenue & Finance',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
       }
-    : isPharmacist
+    : isLab
       ? {
-          name: 'Marcus Vance, RPh',
-          specialization: 'Lead Clinical Pharmacist',
-          department: 'Central Pharmacy & Dispensary',
-          avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200',
+          name: 'Alex Mercer, MLS',
+          specialization: 'Senior Medical Laboratory Scientist',
+          department: 'Clinical Pathology & Biochemistry',
+          avatarUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=200',
         }
-      : isReceptionist
+      : isPharmacist
         ? {
-            name: 'Rachel Adams',
-            specialization: 'Lead Front Desk Receptionist',
-            department: 'Main Lobby / Admissions',
-            avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
+            name: 'Marcus Vance, RPh',
+            specialization: 'Lead Clinical Pharmacist',
+            department: 'Central Pharmacy & Dispensary',
+            avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200',
           }
-        : isNurse
+        : isReceptionist
           ? {
-              name: 'Nurse Sarah Jenkins, RN',
-              specialization: 'Senior Ward Charge Nurse',
-              department: 'Ward 3B',
-              avatarUrl: 'https://images.unsplash.com/photo-1594824813624-9b28a883907c?auto=format&fit=crop&q=80&w=200',
+              name: 'Rachel Adams',
+              specialization: 'Lead Front Desk Receptionist',
+              department: 'Main Lobby / Admissions',
+              avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
             }
-          : {
-              name: 'Dr. Sarah Chen',
-              specialization: 'Cardiologist',
-              department: 'OPD-102',
-              avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200',
-            };
+          : isNurse
+            ? {
+                name: 'Nurse Sarah Jenkins, RN',
+                specialization: 'Senior Ward Charge Nurse',
+                department: 'Ward 3B',
+                avatarUrl: 'https://images.unsplash.com/photo-1594824813624-9b28a883907c?auto=format&fit=crop&q=80&w=200',
+              }
+            : {
+                name: 'Dr. Sarah Chen',
+                specialization: 'Cardiologist',
+                department: 'OPD-102',
+                avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200',
+              };
 
   const currentUser = user || defaultUser;
 
@@ -208,7 +240,9 @@ export const Sidebar = ({
             </div>
           ) : (
             <div className="med-sidebar-logo-collapsed">
-              {isLab ? (
+              {isAccountant ? (
+                <FileSpreadsheet size={24} color="#d97706" />
+              ) : isLab ? (
                 <Microscope size={24} color="#7c3aed" />
               ) : isReceptionist ? (
                 <Building2 size={24} color="#00d2b4" />

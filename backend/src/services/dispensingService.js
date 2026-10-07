@@ -5,6 +5,7 @@ const {
   generateTransactionNumber,
   generateInvoiceNumber,
 } = require('../utils/patientIdGenerator');
+const { calculateInvoiceTotals } = require('../utils/financeMoney');
 
 class DispensingService {
   /**
@@ -289,19 +290,30 @@ class DispensingService {
         }
 
         // 6. Recalculate invoice totals server-side
-        const invoiceItems = await tx.invoiceItem.findMany({
-          where: { invoiceId: invoice.id },
+        const fullInvoice = await tx.invoice.findUnique({
+          where: { id: invoice.id },
+          include: { items: true, adjustments: true, payments: true, refunds: true },
         });
-        const newSubtotal = invoiceItems.reduce((acc, itm) => acc + Number(itm.totalPrice), 0);
-        const newTotal = Number((newSubtotal + Number(invoice.taxAmount) - Number(invoice.discountAmount)).toFixed(2));
-        const newOutstanding = Number((newTotal - Number(invoice.paidAmount)).toFixed(2));
+        const calculatedTotals = calculateInvoiceTotals({
+          items: fullInvoice.items,
+          adjustments: fullInvoice.adjustments,
+          payments: fullInvoice.payments,
+          refunds: fullInvoice.refunds,
+          isCancelled: fullInvoice.status === 'CANCELLED',
+        });
 
         await tx.invoice.update({
           where: { id: invoice.id },
           data: {
-            subtotal: newSubtotal,
-            totalAmount: newTotal,
-            outstandingAmount: newOutstanding,
+            subtotal: calculatedTotals.subtotal,
+            discountAmount: calculatedTotals.discountAmount,
+            taxAmount: calculatedTotals.taxAmount,
+            totalAmount: calculatedTotals.totalAmount,
+            adjustmentAmount: calculatedTotals.adjustmentAmount,
+            paidAmount: calculatedTotals.paidAmount,
+            refundedAmount: calculatedTotals.refundedAmount,
+            outstandingAmount: calculatedTotals.outstandingAmount,
+            status: calculatedTotals.status,
           },
         });
 

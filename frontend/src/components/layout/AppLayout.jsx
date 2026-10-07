@@ -22,6 +22,7 @@ import nurseApi from '../../api/nurseApi';
 import receptionistApi from '../../api/receptionistApi';
 import pharmacistApi from '../../api/pharmacistApi';
 import labApi from '../../api/labApi';
+import accountantApi from '../../api/accountantApi';
 
 export const AppLayout = ({ theme = 'light', onToggleTheme, onShowToast }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -29,55 +30,65 @@ export const AppLayout = ({ theme = 'light', onToggleTheme, onShowToast }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const isAccountant = location.pathname.startsWith('/app/accountant');
   const isLab = location.pathname.startsWith('/app/lab');
   const isPharmacist = location.pathname.startsWith('/app/pharmacist');
   const isReceptionist = location.pathname.startsWith('/app/receptionist');
   const isNurse = location.pathname.startsWith('/app/nurse');
 
-  const currentRole = isLab
-    ? 'LAB_TECHNICIAN'
-    : isPharmacist
-      ? 'PHARMACIST'
-      : isReceptionist
-        ? 'RECEPTIONIST'
-        : isNurse
-          ? 'NURSE'
-          : 'DOCTOR';
+  const currentRole = isAccountant
+    ? 'ACCOUNTANT'
+    : isLab
+      ? 'LAB_TECHNICIAN'
+      : isPharmacist
+        ? 'PHARMACIST'
+        : isReceptionist
+          ? 'RECEPTIONIST'
+          : isNurse
+            ? 'NURSE'
+            : 'DOCTOR';
 
-  const defaultUserInfo = isLab
+  const defaultUserInfo = isAccountant
     ? {
-        name: 'Alex Mercer, MLS',
-        specialization: 'Senior Medical Laboratory Scientist',
-        department: 'Clinical Pathology & Biochemistry',
-        avatarUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=200',
+        name: 'David Sterling, CA',
+        specialization: 'Senior Financial Controller',
+        department: 'Hospital Revenue & Finance',
+        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
       }
-    : isPharmacist
+    : isLab
       ? {
-          name: 'Marcus Vance, RPh',
-          specialization: 'Lead Clinical Pharmacist',
-          department: 'Central Pharmacy & Dispensary',
-          avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200',
+          name: 'Alex Mercer, MLS',
+          specialization: 'Senior Medical Laboratory Scientist',
+          department: 'Clinical Pathology & Biochemistry',
+          avatarUrl: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=200',
         }
-      : isReceptionist
+      : isPharmacist
         ? {
-            name: 'Rachel Adams',
-            specialization: 'Lead Front Desk Receptionist',
-            department: 'Main Lobby / Admissions',
-            avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
+            name: 'Marcus Vance, RPh',
+            specialization: 'Lead Clinical Pharmacist',
+            department: 'Central Pharmacy & Dispensary',
+            avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200',
           }
-        : isNurse
+        : isReceptionist
           ? {
-              name: 'Nurse Sarah Jenkins, RN',
-              specialization: 'Senior Ward Charge Nurse',
-              department: 'Ward 3B',
-              avatarUrl: 'https://images.unsplash.com/photo-1594824813624-9b28a883907c?auto=format&fit=crop&q=80&w=200',
+              name: 'Rachel Adams',
+              specialization: 'Lead Front Desk Receptionist',
+              department: 'Main Lobby / Admissions',
+              avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
             }
-          : {
-              name: 'Dr. Sarah Chen',
-              specialization: 'Cardiology',
-              department: 'OPD-102',
-              avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200',
-            };
+          : isNurse
+            ? {
+                name: 'Nurse Sarah Jenkins, RN',
+                specialization: 'Senior Ward Charge Nurse',
+                department: 'Ward 3B',
+                avatarUrl: 'https://images.unsplash.com/photo-1594824813624-9b28a883907c?auto=format&fit=crop&q=80&w=200',
+              }
+            : {
+                name: 'Dr. Sarah Chen',
+                specialization: 'Cardiology',
+                department: 'OPD-102',
+                avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200',
+              };
 
   const [userInfo, setUserInfo] = useState(defaultUserInfo);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -85,7 +96,26 @@ export const AppLayout = ({ theme = 'light', onToggleTheme, onShowToast }) => {
   // Fetch profile and unread notifications count based on role
   useEffect(() => {
     async function loadUserContext() {
-      if (isLab) {
+      if (isAccountant) {
+        try {
+          const profileRes = await accountantApi.getProfile();
+          if (profileRes.data) {
+            const p = profileRes.data;
+            setUserInfo({
+              name: p.user?.fullName || 'David Sterling, CA',
+              specialization: p.qualifications?.join(', ') || 'Senior Financial Controller',
+              department: p.section || p.department || 'Hospital Revenue & Finance',
+              avatarUrl: p.user?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+            });
+          }
+        } catch (e) {}
+        try {
+          const notifRes = await accountantApi.getNotifications({ isRead: 'false' });
+          if (notifRes.data?.unreadCount !== undefined) {
+            setUnreadCount(notifRes.data.unreadCount);
+          }
+        } catch (e) {}
+      } else if (isLab) {
         try {
           const profileRes = await labApi.getProfile();
           if (profileRes.data) {
@@ -186,7 +216,7 @@ export const AppLayout = ({ theme = 'light', onToggleTheme, onShowToast }) => {
     }
 
     loadUserContext();
-  }, [isLab, isPharmacist, isReceptionist, isNurse]);
+  }, [isAccountant, isLab, isPharmacist, isReceptionist, isNurse]);
 
   // Time-of-day greeting generator
   const getGreeting = () => {
@@ -203,45 +233,53 @@ export const AppLayout = ({ theme = 'light', onToggleTheme, onShowToast }) => {
     year: 'numeric',
   });
 
-  const profilePath = isLab
-    ? '/app/lab/profile'
-    : isPharmacist
-      ? '/app/pharmacist/profile'
-      : isReceptionist
-        ? '/app/receptionist/profile'
-        : isNurse
-          ? '/app/nurse/profile'
-          : '/app/doctor/profile';
+  const profilePath = isAccountant
+    ? '/app/accountant/profile'
+    : isLab
+      ? '/app/lab/profile'
+      : isPharmacist
+        ? '/app/pharmacist/profile'
+        : isReceptionist
+          ? '/app/receptionist/profile'
+          : isNurse
+            ? '/app/nurse/profile'
+            : '/app/doctor/profile';
 
-  const notificationsPath = isLab
-    ? '/app/lab/notifications'
-    : isPharmacist
-      ? '/app/pharmacist/notifications'
-      : isReceptionist
-        ? '/app/receptionist/notifications'
-        : isNurse
-          ? '/app/nurse/notifications'
-          : '/app/doctor/notifications';
+  const notificationsPath = isAccountant
+    ? '/app/accountant/notifications'
+    : isLab
+      ? '/app/lab/notifications'
+      : isPharmacist
+        ? '/app/pharmacist/notifications'
+        : isReceptionist
+          ? '/app/receptionist/notifications'
+          : isNurse
+            ? '/app/nurse/notifications'
+            : '/app/doctor/notifications';
 
-  const quickActionPath = isLab
-    ? '/app/lab/samples'
-    : isPharmacist
-      ? '/app/pharmacist/dispensing'
-      : isReceptionist
-        ? '/app/receptionist/appointments/book'
-        : isNurse
-          ? '/app/nurse/vitals'
-          : '/app/doctor/consultations';
+  const quickActionPath = isAccountant
+    ? '/app/accountant/invoices/new'
+    : isLab
+      ? '/app/lab/samples'
+      : isPharmacist
+        ? '/app/pharmacist/dispensing'
+        : isReceptionist
+          ? '/app/receptionist/appointments/book'
+          : isNurse
+            ? '/app/nurse/vitals'
+            : '/app/doctor/consultations';
 
-  const quickActionLabel = isLab
-    ? 'Collect Specimen'
-    : isPharmacist
-      ? 'Dispense Rx'
-      : isReceptionist
-        ? 'Book Appointment'
-        : isNurse
-          ? 'Quick Vitals Check'
-          : 'Consultation Hub';
+  const quickActionLabel = isAccountant
+    ? 'Create Invoice'
+    : isLab
+      ? 'Collect Specimen'
+      : isPharmacist
+        ? 'Dispense Rx'
+        : isReceptionist
+          ? 'Book Appointment'
+          : isNurse
+            ? 'Quick Vitals Check'
+            : 'Consultation Hub';
 
   return (
     <div className={`med-app-shell ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`} data-theme={theme}>
@@ -276,7 +314,9 @@ export const AppLayout = ({ theme = 'light', onToggleTheme, onShowToast }) => {
               </h2>
               <div className="med-greeting-sub">
                 <span className="med-dept-tag">
-                  {isLab ? (
+                  {isAccountant ? (
+                    <Building2 size={13} />
+                  ) : isLab ? (
                     <Microscope size={13} />
                   ) : isPharmacist ? (
                     <Pill size={13} />
@@ -304,7 +344,7 @@ export const AppLayout = ({ theme = 'light', onToggleTheme, onShowToast }) => {
               onClick={() => navigate(quickActionPath)}
               title={quickActionLabel}
             >
-              {isLab ? <TestTube size={15} /> : isNurse ? <Activity size={15} /> : <Plus size={15} />}
+              {isAccountant ? <Plus size={15} /> : isLab ? <TestTube size={15} /> : isNurse ? <Activity size={15} /> : <Plus size={15} />}
               <span>{quickActionLabel}</span>
             </button>
 
@@ -349,7 +389,7 @@ export const AppLayout = ({ theme = 'light', onToggleTheme, onShowToast }) => {
 
         {/* Dynamic Nested Page Content */}
         <main className="med-page-content">
-          <Outlet context={{ theme, userInfo, isNurse, isLab, isPharmacist, isReceptionist, onShowToast, setUnreadCount }} />
+          <Outlet context={{ theme, userInfo, isAccountant, isNurse, isLab, isPharmacist, isReceptionist, onShowToast, setUnreadCount }} />
         </main>
       </div>
     </div>

@@ -11,9 +11,19 @@ let cachedDemoReceptionist = null;
 let cachedDemoPharmacist = null;
 let cachedDemoLabTech = null;
 let cachedDemoLabVerifier = null;
+let cachedDemoAccountant = null;
+let cachedDemoSeniorFinance = null;
 
 async function initDemoCache() {
   try {
+    const seniorFinance = await prisma.user.findFirst({
+      where: { role: 'ACCOUNTANT', isActive: true, accountantProfile: { isSeniorApprover: true } },
+      include: { accountantProfile: true },
+    });
+    const accountant = await prisma.user.findFirst({
+      where: { role: 'ACCOUNTANT', isActive: true, accountantProfile: { isSeniorApprover: false } },
+      include: { accountantProfile: true },
+    });
     const labVerifier = await prisma.user.findFirst({
       where: { role: 'LAB_TECHNICIAN', isActive: true, labTechnicianProfile: { isSeniorVerifier: true } },
       include: { labTechnicianProfile: true },
@@ -38,6 +48,31 @@ async function initDemoCache() {
       where: { role: 'DOCTOR', isActive: true },
       include: { doctorProfile: true },
     });
+
+    if (seniorFinance) {
+      cachedDemoSeniorFinance = {
+        id: seniorFinance.id,
+        email: seniorFinance.email,
+        fullName: seniorFinance.fullName,
+        role: seniorFinance.role,
+        accountantId: seniorFinance.accountantProfile?.id,
+        accountantProfile: seniorFinance.accountantProfile,
+        isSeniorApprover: true,
+      };
+    }
+
+    if (accountant || seniorFinance) {
+      const defaultAccountant = accountant || seniorFinance;
+      cachedDemoAccountant = {
+        id: defaultAccountant.id,
+        email: defaultAccountant.email,
+        fullName: defaultAccountant.fullName,
+        role: defaultAccountant.role,
+        accountantId: defaultAccountant.accountantProfile?.id,
+        accountantProfile: defaultAccountant.accountantProfile,
+        isSeniorApprover: !!defaultAccountant.accountantProfile?.isSeniorApprover,
+      };
+    }
 
     if (labVerifier) {
       cachedDemoLabVerifier = {
@@ -127,6 +162,8 @@ async function authMiddleware(req, res, next) {
     }
 
     // ── Placeholder / Demo Fallback ──
+    const isSeniorFinanceContext = token === 'demo-senior-finance-token';
+    const isAccountantContext = token === 'demo-accountant-token' || isSeniorFinanceContext || req.originalUrl?.includes('/api/v1/accountant') || req.baseUrl?.includes('/accountant');
     const isLabVerifierContext = token === 'demo-lab-verifier-token';
     const isLabContext = token === 'demo-lab-token' || isLabVerifierContext || req.originalUrl?.includes('/api/v1/lab') || req.baseUrl?.includes('/lab');
     const isPharmacistContext = token === 'demo-pharmacist-token' || req.originalUrl?.includes('/api/v1/pharmacist') || req.baseUrl?.includes('/pharmacist');
@@ -134,6 +171,23 @@ async function authMiddleware(req, res, next) {
     const isNurseContext = token === 'demo-nurse-token' || req.originalUrl?.includes('/api/v1/nurse') || req.baseUrl?.includes('/nurse');
 
     if (!token || token.startsWith('demo-')) {
+      if (isAccountantContext) {
+        if (!cachedDemoAccountant || !cachedDemoSeniorFinance) {
+          await initDemoCache();
+        }
+
+        const accountantUser = isSeniorFinanceContext
+          ? cachedDemoSeniorFinance || cachedDemoAccountant
+          : cachedDemoAccountant || cachedDemoSeniorFinance;
+
+        if (!accountantUser) {
+          return ApiResponse.unauthorized(res, 'No active accountant found for workspace session');
+        }
+
+        req.user = { ...accountantUser };
+        return next();
+      }
+
       if (isLabContext) {
         if (!cachedDemoLabTech || !cachedDemoLabVerifier) {
           await initDemoCache();
@@ -213,6 +267,7 @@ async function authMiddleware(req, res, next) {
         receptionistProfile: true,
         pharmacistProfile: true,
         labTechnicianProfile: true,
+        accountantProfile: true,
       },
     });
 
@@ -236,6 +291,9 @@ async function authMiddleware(req, res, next) {
       labTechnicianId: user.labTechnicianProfile?.id,
       labTechnicianProfile: user.labTechnicianProfile,
       isSeniorVerifier: !!user.labTechnicianProfile?.isSeniorVerifier,
+      accountantId: user.accountantProfile?.id,
+      accountantProfile: user.accountantProfile,
+      isSeniorApprover: !!user.accountantProfile?.isSeniorApprover,
     };
 
     next();
@@ -432,11 +490,21 @@ function authorize(...roles) {
   };
 }
 
+function requireSeniorApprover(req, res, next) {
+  if (!req.user) {
+    return ApiResponse.unauthorized(res, 'Authentication required');
+  }
+  if (req.user.role === 'ADMIN' || req.user.isSeniorApprover) {
+    return next();
+  }
+  return ApiResponse.forbidden(res, 'Access denied: Requires Senior Finance Approver role privileges');
+}
 
 module.exports = {
   authMiddleware,
   authenticate: authMiddleware,
   requireRole,
+  requireSeniorApprover,
   authorize,
   authorizePatientAccess,
   authorizeNursePatientAccess,

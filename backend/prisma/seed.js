@@ -8,10 +8,14 @@ async function main() {
   // 1. Fast truncate of all tables with retry
   console.log('Cleaning existing database tables...');
   let truncateSuccess = false;
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  for (let attempt = 1; attempt <= 5; attempt++) {
     try {
       await prisma.$executeRawUnsafe(`
         TRUNCATE TABLE 
+          expenses,
+          refunds,
+          invoice_adjustments,
+          accountant_profiles,
           lab_result_corrections,
           lab_result_values,
           lab_results,
@@ -62,11 +66,11 @@ async function main() {
       truncateSuccess = true;
       break;
     } catch (err) {
-      console.warn(`Truncate attempt ${attempt}/3 failed: ${err.message}. Retrying in 1s...`);
-      await new Promise((r) => setTimeout(r, 1000));
+      console.warn(`Truncate attempt ${attempt}/5 failed: ${err.message}. Retrying in 2s...`);
+      await new Promise((r) => setTimeout(r, 2000));
     }
   }
-  if (!truncateSuccess) throw new Error('Failed to truncate tables after 3 attempts');
+  if (!truncateSuccess) throw new Error('Failed to truncate tables after 5 attempts');
   console.log('✅ Clean complete.');
 
   // 2. Hospital
@@ -88,6 +92,7 @@ async function main() {
   const receptionistPasswordHash = await bcrypt.hash('Receptionist@123', 10);
   const pharmacistPasswordHash = await bcrypt.hash('Pharmacist@123', 10);
   const labPasswordHash = await bcrypt.hash('Lab@123', 10);
+  const accountantPasswordHash = await bcrypt.hash('Accountant@123', 10);
 
   // 3. Receptionist User & Profile
   const receptionistUser = await prisma.user.create({
@@ -202,6 +207,61 @@ async function main() {
       employeeId: 'EMP-LAB-502',
       phone: '+91 98444 77889',
       bio: 'Consultant Clinical Pathologist and Senior Quality Verifier with 12+ years overseeing high-complexity diagnostic validation and biomarker verification.',
+    },
+  });
+
+  // 3d. Accountant Users & Profiles (Standard Accountant & Senior Finance Approver)
+  const accountantUser = await prisma.user.create({
+    data: {
+      hospitalId: hospital.id,
+      role: 'ACCOUNTANT',
+      fullName: 'Priya Mukherjee',
+      email: 'accountant@medcore.health',
+      passwordHash: accountantPasswordHash,
+      phone: '+91 98111 88990',
+      employeeId: 'EMP-ACC-601',
+      avatarUrl: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&q=80&w=300',
+      isActive: true,
+      isVerified: true,
+    },
+  });
+
+  const accountantProfile = await prisma.accountantProfile.create({
+    data: {
+      userId: accountantUser.id,
+      department: 'Central Finance & Revenue Operations',
+      isSeniorApprover: false,
+      status: 'On Duty',
+      employeeId: 'EMP-ACC-601',
+      phone: '+91 98111 88990',
+      bio: 'Senior Billing Officer & Hospital Financial Analyst with 7+ years managing healthcare cash flows, revenue cycle, and billing reconciliation.',
+    },
+  });
+
+  const seniorAccountantUser = await prisma.user.create({
+    data: {
+      hospitalId: hospital.id,
+      role: 'ACCOUNTANT',
+      fullName: 'Vikramaditya Singhania',
+      email: 'finance_head@medcore.health',
+      passwordHash: accountantPasswordHash,
+      phone: '+91 98222 99001',
+      employeeId: 'EMP-ACC-600',
+      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
+      isActive: true,
+      isVerified: true,
+    },
+  });
+
+  const seniorAccountantProfile = await prisma.accountantProfile.create({
+    data: {
+      userId: seniorAccountantUser.id,
+      department: 'Hospital Financial Management & Audit',
+      isSeniorApprover: true,
+      status: 'On Duty',
+      employeeId: 'EMP-ACC-600',
+      phone: '+91 98222 99001',
+      bio: 'Head of Finance & Chief Financial Controller with 16+ years directing institutional healthcare financial systems, operational auditing, and refund authorization.',
     },
   });
 
@@ -364,23 +424,23 @@ async function main() {
   // Doctor Weekly Availabilities (Mon to Fri for all doctors)
   const scheduleDays = [1, 2, 3, 4, 5];
   const allDoctorProfiles = [doctorProfile1, doctorProfile2, doctorProfile3, doctorProfile4, doctorProfile5];
+  const availabilityData = [];
 
   for (const doc of allDoctorProfiles) {
     for (const day of scheduleDays) {
-      await prisma.doctorAvailability.create({
-        data: {
-          doctorId: doc.id,
-          dayOfWeek: day,
-          startTime: '09:00',
-          endTime: '17:00',
-          breakStartTime: '13:00',
-          breakEndTime: '14:00',
-          consultationDuration: 15,
-          isActive: true,
-        },
+      availabilityData.push({
+        doctorId: doc.id,
+        dayOfWeek: day,
+        startTime: '09:00',
+        endTime: '17:00',
+        breakStartTime: '13:00',
+        breakEndTime: '14:00',
+        consultationDuration: 15,
+        isActive: true,
       });
     }
   }
+  await prisma.doctorAvailability.createMany({ data: availabilityData });
 
   // 5. Nurses
   const nurseUser1 = await prisma.user.create({
@@ -1033,18 +1093,34 @@ async function main() {
     include: { items: true },
   });
 
-  // 13. Invoices (Shared Billing System)
-  // Invoice 1: Robert Sterling (Cardiology Consult + ECG) - PAID ($1050)
+  // 13. Financial Dates Configuration for Multi-Month History
+  const threeDaysAgo = new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000);
+  const fiveDaysAgo = new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000);
+  const twoWeeksAgo = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const threeWeeksAgo = new Date(today.getTime() - 21 * 24 * 60 * 60 * 1000);
+  const lastMonth = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const sixWeeksAgo = new Date(today.getTime() - 45 * 24 * 60 * 60 * 1000);
+  const twoMonthsAgo = new Date(today.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+  // 13. Invoices (Shared Hospital Billing System - 20 Invoices spanning 3 months)
+  console.log('Seeding 20 Invoices across multiple departments and billing lifecycles...');
+
+  // Invoice 1: Robert Sterling (Cardiology Consult + ECG) - PAID (₹1050)
   const inv1 = await prisma.invoice.create({
     data: {
       invoiceNumber: 'INV-2026-0001',
       patientId: createdPatients[0].id,
       appointmentId: createdAppointments[0].id,
+      type: 'OPD',
       createdById: receptionistUser.id,
       issueDate: today,
+      invoiceDate: today,
+      dueDate: today,
       subtotal: 1050.00,
       taxAmount: 0.00,
       discountAmount: 0.00,
+      adjustmentAmount: 0.00,
+      refundedAmount: 0.00,
       totalAmount: 1050.00,
       paidAmount: 1050.00,
       outstandingAmount: 0.00,
@@ -1058,6 +1134,9 @@ async function main() {
             category: createdServices[1].category,
             unitPrice: 750.00,
             quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
             totalPrice: 750.00,
           },
           {
@@ -1066,6 +1145,9 @@ async function main() {
             category: createdServices[6].category,
             unitPrice: 300.00,
             quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
             totalPrice: 300.00,
           },
         ],
@@ -1073,22 +1155,27 @@ async function main() {
     },
   });
 
-  // Invoice 2: Thomas Wright (General Consult + Digital X-Ray) - PARTIALLY PAID ($900 total, $500 paid, $400 due)
+  // Invoice 2: Thomas Wright (General Consult + Digital X-Ray) - PARTIALLY PAID (₹900 total, ₹500 paid, ₹400 due)
   const inv2 = await prisma.invoice.create({
     data: {
       invoiceNumber: 'INV-2026-0002',
       patientId: createdPatients[5].id,
       appointmentId: createdAppointments[3].id,
+      type: 'OPD',
       createdById: receptionistUser.id,
       issueDate: today,
+      invoiceDate: today,
+      dueDate: inFiveDays,
       subtotal: 900.00,
       taxAmount: 0.00,
       discountAmount: 0.00,
+      adjustmentAmount: 0.00,
+      refundedAmount: 0.00,
       totalAmount: 900.00,
       paidAmount: 500.00,
       outstandingAmount: 400.00,
       status: 'PARTIALLY_PAID',
-      notes: 'Initial deposit paid by Cash. Balance of $400 pending upon X-Ray radiologist report release.',
+      notes: 'Initial deposit paid by Cash. Balance of ₹400 pending upon X-Ray radiologist report release.',
       items: {
         create: [
           {
@@ -1097,6 +1184,9 @@ async function main() {
             category: createdServices[0].category,
             unitPrice: 500.00,
             quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
             totalPrice: 500.00,
           },
           {
@@ -1105,6 +1195,9 @@ async function main() {
             category: createdServices[5].category,
             unitPrice: 400.00,
             quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
             totalPrice: 400.00,
           },
         ],
@@ -1112,17 +1205,22 @@ async function main() {
     },
   });
 
-  // Invoice 3: Grace Kim (Orthopedic Consult + Day Care Bed) - PENDING ($1700 due)
+  // Invoice 3: Grace Kim (Orthopedic Consult + Day Care Bed) - PENDING (₹1700 due)
   const inv3 = await prisma.invoice.create({
     data: {
       invoiceNumber: 'INV-2026-0003',
       patientId: createdPatients[8].id,
       appointmentId: createdAppointments[5].id,
+      type: 'OPD',
       createdById: receptionistUser.id,
-      issueDate: today,
+      issueDate: yesterday,
+      invoiceDate: yesterday,
+      dueDate: tomorrow,
       subtotal: 1700.00,
       taxAmount: 0.00,
       discountAmount: 0.00,
+      adjustmentAmount: 0.00,
+      refundedAmount: 0.00,
       totalAmount: 1700.00,
       paidAmount: 0.00,
       outstandingAmount: 1700.00,
@@ -1136,6 +1234,9 @@ async function main() {
             category: 'Consultation',
             unitPrice: 700.00,
             quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
             totalPrice: 700.00,
           },
           {
@@ -1144,6 +1245,9 @@ async function main() {
             category: createdServices[8].category,
             unitPrice: 1000.00,
             quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
             totalPrice: 1000.00,
           },
         ],
@@ -1151,17 +1255,22 @@ async function main() {
     },
   });
 
-  // Invoice 4: Clara Oswald (Asthma Therapy & Complete Blood Count) - PAID ($750)
+  // Invoice 4: Clara Oswald (Asthma Therapy & Complete Blood Count) - PAID (₹750)
   const inv4 = await prisma.invoice.create({
     data: {
       invoiceNumber: 'INV-2026-0004',
       patientId: createdPatients[2].id,
       appointmentId: createdAppointments[2].id,
+      type: 'OPD',
       createdById: receptionistUser.id,
       issueDate: yesterday,
+      invoiceDate: yesterday,
+      dueDate: yesterday,
       subtotal: 750.00,
       taxAmount: 0.00,
       discountAmount: 0.00,
+      adjustmentAmount: 0.00,
+      refundedAmount: 0.00,
       totalAmount: 750.00,
       paidAmount: 750.00,
       outstandingAmount: 0.00,
@@ -1175,6 +1284,9 @@ async function main() {
             category: createdServices[0].category,
             unitPrice: 500.00,
             quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
             totalPrice: 500.00,
           },
           {
@@ -1183,6 +1295,9 @@ async function main() {
             category: createdServices[3].category,
             unitPrice: 250.00,
             quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
             totalPrice: 250.00,
           },
         ],
@@ -1190,16 +1305,21 @@ async function main() {
     },
   });
 
-  // Invoice 5: Arthur Pendelton (Emergency Triage & Trauma Intake) - PAID ($600)
+  // Invoice 5: Arthur Pendelton (Emergency Triage & Trauma Intake) - PAID (₹600)
   const inv5 = await prisma.invoice.create({
     data: {
       invoiceNumber: 'INV-2026-0005',
       patientId: createdPatients[9].id,
+      type: 'EMERGENCY',
       createdById: receptionistUser.id,
       issueDate: yesterday,
+      invoiceDate: yesterday,
+      dueDate: yesterday,
       subtotal: 600.00,
       taxAmount: 0.00,
       discountAmount: 0.00,
+      adjustmentAmount: 0.00,
+      refundedAmount: 0.00,
       totalAmount: 600.00,
       paidAmount: 600.00,
       outstandingAmount: 0.00,
@@ -1213,6 +1333,9 @@ async function main() {
             category: createdServices[7].category,
             unitPrice: 600.00,
             quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
             totalPrice: 600.00,
           },
         ],
@@ -1220,16 +1343,780 @@ async function main() {
     },
   });
 
-  // 14. 8 Realistic Payments
+  // Invoice 6: Liam O'Connor (Screening Package Advance - Cancelled with Surplus) - CANCELLED (₹5000 paid surplus)
+  const inv6 = await prisma.invoice.create({
+    data: {
+      invoiceNumber: 'INV-2026-0006',
+      patientId: createdPatients[7].id,
+      type: 'OPD',
+      createdById: accountantUser.id,
+      issueDate: lastWeek,
+      invoiceDate: lastWeek,
+      dueDate: lastWeek,
+      subtotal: 5000.00,
+      taxAmount: 0.00,
+      discountAmount: 0.00,
+      adjustmentAmount: 0.00,
+      refundedAmount: 0.00,
+      totalAmount: 5000.00,
+      paidAmount: 5000.00,
+      outstandingAmount: 0.00,
+      status: 'CANCELLED',
+      cancelledAt: threeDaysAgo,
+      cancelledById: accountantUser.id,
+      cancelReason: 'Patient relocated overseas; screening procedure cancelled and deposit held as refundable surplus.',
+      notes: 'Executive Full Body Health Screening Package deposit.',
+      items: {
+        create: [
+          {
+            serviceName: 'Executive Full Body Health Screening Package',
+            category: 'Package',
+            unitPrice: 5000.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 5000.00,
+          },
+        ],
+      },
+    },
+  });
+
+  // Invoice 7: David Miller (Cardiology & Labs with Credit Adjustment) - PAID (₹1300)
+  const inv7 = await prisma.invoice.create({
+    data: {
+      invoiceNumber: 'INV-2026-0007',
+      patientId: createdPatients[3].id,
+      type: 'OPD',
+      createdById: accountantUser.id,
+      issueDate: lastWeek,
+      invoiceDate: lastWeek,
+      dueDate: lastWeek,
+      subtotal: 1500.00,
+      taxAmount: 0.00,
+      discountAmount: 0.00,
+      adjustmentAmount: -200.00, // ₹200 Credit Adjustment
+      refundedAmount: 0.00,
+      totalAmount: 1500.00,
+      paidAmount: 1300.00,
+      outstandingAmount: 0.00,
+      status: 'PAID',
+      notes: 'Cardiology consult, lipid panel, and rest ECG with senior citizen fee adjustment.',
+      items: {
+        create: [
+          {
+            serviceCatalogId: createdServices[1].id,
+            serviceName: createdServices[1].name,
+            category: createdServices[1].category,
+            unitPrice: 750.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 750.00,
+          },
+          {
+            serviceCatalogId: createdServices[4].id,
+            serviceName: createdServices[4].name,
+            category: createdServices[4].category,
+            unitPrice: 450.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 450.00,
+          },
+          {
+            serviceCatalogId: createdServices[6].id,
+            serviceName: createdServices[6].name,
+            category: createdServices[6].category,
+            unitPrice: 300.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 300.00,
+          },
+        ],
+      },
+    },
+  });
+
+  // Add Invoice Adjustment for Invoice 7
+  await prisma.invoiceAdjustment.create({
+    data: {
+      invoiceId: inv7.id,
+      type: 'CREDIT',
+      amount: 200.00,
+      reason: 'Senior Citizen 10% Compassionate Waiver',
+      createdById: accountantUser.id,
+      createdAt: lastWeek,
+    },
+  });
+
+  // Invoice 8: Elena Rostova (Consult + Labs with Processed Refund) - PARTIALLY_PAID (₹1450 total, ₹1450 paid, ₹450 refunded, ₹450 outstanding)
+  const inv8 = await prisma.invoice.create({
+    data: {
+      invoiceNumber: 'INV-2026-0008',
+      patientId: createdPatients[1].id,
+      type: 'OPD',
+      createdById: receptionistUser.id,
+      issueDate: twoWeeksAgo,
+      invoiceDate: twoWeeksAgo,
+      dueDate: twoWeeksAgo,
+      subtotal: 1450.00,
+      taxAmount: 0.00,
+      discountAmount: 0.00,
+      adjustmentAmount: 0.00,
+      refundedAmount: 450.00,
+      totalAmount: 1450.00,
+      paidAmount: 1450.00,
+      outstandingAmount: 450.00,
+      status: 'PARTIALLY_PAID',
+      notes: 'Lipid panel cancelled and refunded; remainder settled.',
+      items: {
+        create: [
+          {
+            serviceCatalogId: createdServices[1].id,
+            serviceName: createdServices[1].name,
+            category: createdServices[1].category,
+            unitPrice: 750.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 750.00,
+          },
+          {
+            serviceCatalogId: createdServices[3].id,
+            serviceName: createdServices[3].name,
+            category: createdServices[3].category,
+            unitPrice: 250.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 250.00,
+          },
+          {
+            serviceCatalogId: createdServices[4].id,
+            serviceName: createdServices[4].name,
+            category: createdServices[4].category,
+            unitPrice: 450.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 450.00,
+          },
+        ],
+      },
+    },
+  });
+
+  // Invoice 9: Maya Patel (Pharmacy Dispensary with GST) - PAID (₹378.22)
+  const inv9 = await prisma.invoice.create({
+    data: {
+      invoiceNumber: 'INV-2026-0009',
+      patientId: createdPatients[4].id,
+      type: 'PHARMACY',
+      createdById: pharmacistUser.id,
+      issueDate: twoWeeksAgo,
+      invoiceDate: twoWeeksAgo,
+      dueDate: twoWeeksAgo,
+      subtotal: 360.00,
+      taxAmount: 33.02,
+      discountAmount: 14.80,
+      adjustmentAmount: 0.00,
+      refundedAmount: 0.00,
+      totalAmount: 378.22,
+      paidAmount: 378.22,
+      outstandingAmount: 0.00,
+      status: 'PAID',
+      notes: 'Outpatient pharmacy medications dispensing.',
+      items: {
+        create: [
+          {
+            serviceName: 'Pharmacy: Levothyroxine 50mcg',
+            category: 'Pharmacy',
+            source: 'PHARMACY',
+            unitPrice: 120.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 5.00,
+            taxAmount: 6.00,
+            totalPrice: 126.00,
+          },
+          {
+            serviceName: 'Pharmacy: Calcium + Vitamin D3',
+            category: 'Pharmacy',
+            source: 'PHARMACY',
+            unitPrice: 240.00,
+            quantity: 1,
+            discount: 14.80,
+            taxRate: 12.00,
+            taxAmount: 27.02,
+            totalPrice: 252.22,
+          },
+        ],
+      },
+    },
+  });
+
+  // Invoice 10: Sophia Martinez (IPD Monitored Observation - Overdue) - PENDING (₹2750 due)
+  const inv10 = await prisma.invoice.create({
+    data: {
+      invoiceNumber: 'INV-2026-0010',
+      patientId: createdPatients[6].id,
+      type: 'IPD',
+      createdById: receptionistUser.id,
+      issueDate: threeWeeksAgo,
+      invoiceDate: threeWeeksAgo,
+      dueDate: twoWeeksAgo, // Overdue!
+      subtotal: 2750.00,
+      taxAmount: 0.00,
+      discountAmount: 0.00,
+      adjustmentAmount: 0.00,
+      refundedAmount: 0.00,
+      totalAmount: 2750.00,
+      paidAmount: 0.00,
+      outstandingAmount: 2750.00,
+      status: 'PENDING',
+      notes: '2 days day-care observation and specialist neurology consultation.',
+      items: {
+        create: [
+          {
+            serviceCatalogId: createdServices[8].id,
+            serviceName: createdServices[8].name,
+            category: createdServices[8].category,
+            unitPrice: 1000.00,
+            quantity: 2,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 2000.00,
+          },
+          {
+            serviceCatalogId: createdServices[1].id,
+            serviceName: 'Specialist / Neurologist Consultation',
+            category: 'Consultation',
+            unitPrice: 750.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 750.00,
+          },
+        ],
+      },
+    },
+  });
+
+  // Invoice 11: Arthur Pendelton (OPD & Diagnostics - Overdue Partial) - PARTIALLY_PAID (₹1550 total, ₹700 paid, ₹850 due)
+  const inv11 = await prisma.invoice.create({
+    data: {
+      invoiceNumber: 'INV-2026-0011',
+      patientId: createdPatients[9].id,
+      type: 'OPD',
+      createdById: receptionistUser.id,
+      issueDate: lastMonth,
+      invoiceDate: lastMonth,
+      dueDate: threeWeeksAgo, // Overdue!
+      subtotal: 1550.00,
+      taxAmount: 0.00,
+      discountAmount: 0.00,
+      adjustmentAmount: 0.00,
+      refundedAmount: 0.00,
+      totalAmount: 1550.00,
+      paidAmount: 700.00,
+      outstandingAmount: 850.00,
+      status: 'PARTIALLY_PAID',
+      notes: 'Emergency follow-up diagnostics panel.',
+      items: {
+        create: [
+          {
+            serviceCatalogId: createdServices[7].id,
+            serviceName: createdServices[7].name,
+            category: createdServices[7].category,
+            unitPrice: 600.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 600.00,
+          },
+          {
+            serviceCatalogId: createdServices[3].id,
+            serviceName: createdServices[3].name,
+            category: createdServices[3].category,
+            unitPrice: 250.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 250.00,
+          },
+          {
+            serviceCatalogId: createdServices[6].id,
+            serviceName: createdServices[6].name,
+            category: createdServices[6].category,
+            unitPrice: 300.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 300.00,
+          },
+          {
+            serviceCatalogId: createdServices[5].id,
+            serviceName: createdServices[5].name,
+            category: createdServices[5].category,
+            unitPrice: 400.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 400.00,
+          },
+        ],
+      },
+    },
+  });
+
+  // Invoice 12: Robert Sterling (IPD Cardiac Monitoring & Ward - Last Month) - PAID (₹4000)
+  const inv12 = await prisma.invoice.create({
+    data: {
+      invoiceNumber: 'INV-2026-0012',
+      patientId: createdPatients[0].id,
+      type: 'IPD',
+      createdById: accountantUser.id,
+      issueDate: lastMonth,
+      invoiceDate: lastMonth,
+      dueDate: lastMonth,
+      subtotal: 4500.00,
+      taxAmount: 0.00,
+      discountAmount: 500.00,
+      adjustmentAmount: 0.00,
+      refundedAmount: 0.00,
+      totalAmount: 4000.00,
+      paidAmount: 4000.00,
+      outstandingAmount: 0.00,
+      status: 'PAID',
+      notes: 'Inpatient ward charges with hospital courtesy discount.',
+      items: {
+        create: [
+          {
+            serviceCatalogId: createdServices[8].id,
+            serviceName: 'Inpatient Monitored Cardiac Bed (3 Days)',
+            category: 'Ward & Bed',
+            unitPrice: 1000.00,
+            quantity: 3,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 3000.00,
+          },
+          {
+            serviceCatalogId: createdServices[1].id,
+            serviceName: 'Specialist Interventional Cardiac Monitoring',
+            category: 'Consultation',
+            unitPrice: 1500.00,
+            quantity: 1,
+            discount: 500.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 1500.00,
+          },
+        ],
+      },
+    },
+  });
+
+  // Invoice 13: Elena Rostova (Voided Payment History - 6 Weeks Ago) - PAID (₹750)
+  const inv13 = await prisma.invoice.create({
+    data: {
+      invoiceNumber: 'INV-2026-0013',
+      patientId: createdPatients[1].id,
+      type: 'OPD',
+      createdById: receptionistUser.id,
+      issueDate: sixWeeksAgo,
+      invoiceDate: sixWeeksAgo,
+      dueDate: sixWeeksAgo,
+      subtotal: 750.00,
+      taxAmount: 0.00,
+      discountAmount: 0.00,
+      adjustmentAmount: 0.00,
+      refundedAmount: 0.00,
+      totalAmount: 750.00,
+      paidAmount: 750.00,
+      outstandingAmount: 0.00,
+      status: 'PAID',
+      notes: 'Settled via UPI following voided cash receipt.',
+      items: {
+        create: [
+          {
+            serviceCatalogId: createdServices[0].id,
+            serviceName: createdServices[0].name,
+            category: createdServices[0].category,
+            unitPrice: 500.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 500.00,
+          },
+          {
+            serviceCatalogId: createdServices[3].id,
+            serviceName: createdServices[3].name,
+            category: createdServices[3].category,
+            unitPrice: 250.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 250.00,
+          },
+        ],
+      },
+    },
+  });
+
+  // Invoice 14: Clara Oswald (Consult + X-Ray - 2 Months Ago) - PAID (₹1150)
+  const inv14 = await prisma.invoice.create({
+    data: {
+      invoiceNumber: 'INV-2026-0014',
+      patientId: createdPatients[2].id,
+      type: 'OPD',
+      createdById: accountantUser.id,
+      issueDate: twoMonthsAgo,
+      invoiceDate: twoMonthsAgo,
+      dueDate: twoMonthsAgo,
+      subtotal: 1150.00,
+      taxAmount: 0.00,
+      discountAmount: 0.00,
+      adjustmentAmount: 0.00,
+      refundedAmount: 0.00,
+      totalAmount: 1150.00,
+      paidAmount: 1150.00,
+      outstandingAmount: 0.00,
+      status: 'PAID',
+      notes: 'Consultation and imaging cleared via Cheque.',
+      items: {
+        create: [
+          {
+            serviceCatalogId: createdServices[1].id,
+            serviceName: createdServices[1].name,
+            category: createdServices[1].category,
+            unitPrice: 750.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 750.00,
+          },
+          {
+            serviceCatalogId: createdServices[5].id,
+            serviceName: createdServices[5].name,
+            category: createdServices[5].category,
+            unitPrice: 400.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 400.00,
+          },
+        ],
+      },
+    },
+  });
+
+  // Invoice 15: David Miller (Consult + Full Panel in 3 Installments - 2 Months Ago) - PAID (₹1450)
+  const inv15 = await prisma.invoice.create({
+    data: {
+      invoiceNumber: 'INV-2026-0015',
+      patientId: createdPatients[3].id,
+      type: 'OPD',
+      createdById: receptionistUser.id,
+      issueDate: twoMonthsAgo,
+      invoiceDate: twoMonthsAgo,
+      dueDate: twoMonthsAgo,
+      subtotal: 1450.00,
+      taxAmount: 0.00,
+      discountAmount: 0.00,
+      adjustmentAmount: 0.00,
+      refundedAmount: 0.00,
+      totalAmount: 1450.00,
+      paidAmount: 1450.00,
+      outstandingAmount: 0.00,
+      status: 'PAID',
+      notes: 'Full diagnostic panel paid in 3 split receipts.',
+      items: {
+        create: [
+          {
+            serviceCatalogId: createdServices[1].id,
+            serviceName: createdServices[1].name,
+            category: createdServices[1].category,
+            unitPrice: 750.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 750.00,
+          },
+          {
+            serviceCatalogId: createdServices[3].id,
+            serviceName: createdServices[3].name,
+            category: createdServices[3].category,
+            unitPrice: 250.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 250.00,
+          },
+          {
+            serviceCatalogId: createdServices[4].id,
+            serviceName: createdServices[4].name,
+            category: createdServices[4].category,
+            unitPrice: 450.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 450.00,
+          },
+        ],
+      },
+    },
+  });
+
+  // Invoice 16: Maya Patel (Pediatric Well-Child Fully Refunded - 2 Months Ago) - REFUNDED (₹600 paid, ₹600 refunded)
+  const inv16 = await prisma.invoice.create({
+    data: {
+      invoiceNumber: 'INV-2026-0016',
+      patientId: createdPatients[4].id,
+      type: 'OPD',
+      createdById: receptionistUser.id,
+      issueDate: twoMonthsAgo,
+      invoiceDate: twoMonthsAgo,
+      dueDate: twoMonthsAgo,
+      subtotal: 600.00,
+      taxAmount: 0.00,
+      discountAmount: 0.00,
+      adjustmentAmount: 0.00,
+      refundedAmount: 600.00,
+      totalAmount: 600.00,
+      paidAmount: 600.00,
+      outstandingAmount: 0.00,
+      status: 'REFUNDED',
+      notes: 'Doctor emergency leave; fee refunded back to patient.',
+      items: {
+        create: [
+          {
+            serviceCatalogId: createdServices[2].id,
+            serviceName: createdServices[2].name,
+            category: createdServices[2].category,
+            unitPrice: 600.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 600.00,
+          },
+        ],
+      },
+    },
+  });
+
+  // Invoice 17: Thomas Wright (Follow-up Check - 5 Days Ago) - PAID (₹500)
+  const inv17 = await prisma.invoice.create({
+    data: {
+      invoiceNumber: 'INV-2026-0017',
+      patientId: createdPatients[5].id,
+      type: 'OPD',
+      createdById: receptionistUser.id,
+      issueDate: fiveDaysAgo,
+      invoiceDate: fiveDaysAgo,
+      dueDate: fiveDaysAgo,
+      subtotal: 500.00,
+      taxAmount: 0.00,
+      discountAmount: 0.00,
+      adjustmentAmount: 0.00,
+      refundedAmount: 0.00,
+      totalAmount: 500.00,
+      paidAmount: 500.00,
+      outstandingAmount: 0.00,
+      status: 'PAID',
+      notes: 'General Physician review consult.',
+      items: {
+        create: [
+          {
+            serviceCatalogId: createdServices[0].id,
+            serviceName: createdServices[0].name,
+            category: createdServices[0].category,
+            unitPrice: 500.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 500.00,
+          },
+        ],
+      },
+    },
+  });
+
+  // Invoice 18: Sophia Martinez (Cardiology & ECG - 3 Days Ago) - PAID (₹1050)
+  const inv18 = await prisma.invoice.create({
+    data: {
+      invoiceNumber: 'INV-2026-0018',
+      patientId: createdPatients[6].id,
+      type: 'OPD',
+      createdById: receptionistUser.id,
+      issueDate: threeDaysAgo,
+      invoiceDate: threeDaysAgo,
+      dueDate: threeDaysAgo,
+      subtotal: 1050.00,
+      taxAmount: 0.00,
+      discountAmount: 0.00,
+      adjustmentAmount: 0.00,
+      refundedAmount: 0.00,
+      totalAmount: 1050.00,
+      paidAmount: 1050.00,
+      outstandingAmount: 0.00,
+      status: 'PAID',
+      notes: 'Specialist checkup with resting ECG trace.',
+      items: {
+        create: [
+          {
+            serviceCatalogId: createdServices[1].id,
+            serviceName: createdServices[1].name,
+            category: createdServices[1].category,
+            unitPrice: 750.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 750.00,
+          },
+          {
+            serviceCatalogId: createdServices[6].id,
+            serviceName: createdServices[6].name,
+            category: createdServices[6].category,
+            unitPrice: 300.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 300.00,
+          },
+        ],
+      },
+    },
+  });
+
+  // Invoice 19: Liam O'Connor (Routine Lab Check - Yesterday) - PAID (₹750)
+  const inv19 = await prisma.invoice.create({
+    data: {
+      invoiceNumber: 'INV-2026-0019',
+      patientId: createdPatients[7].id,
+      type: 'OPD',
+      createdById: receptionistUser.id,
+      issueDate: yesterday,
+      invoiceDate: yesterday,
+      dueDate: yesterday,
+      subtotal: 750.00,
+      taxAmount: 0.00,
+      discountAmount: 0.00,
+      adjustmentAmount: 0.00,
+      refundedAmount: 0.00,
+      totalAmount: 750.00,
+      paidAmount: 750.00,
+      outstandingAmount: 0.00,
+      status: 'PAID',
+      notes: 'Consultation and complete blood count.',
+      items: {
+        create: [
+          {
+            serviceCatalogId: createdServices[0].id,
+            serviceName: createdServices[0].name,
+            category: createdServices[0].category,
+            unitPrice: 500.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 500.00,
+          },
+          {
+            serviceCatalogId: createdServices[3].id,
+            serviceName: createdServices[3].name,
+            category: createdServices[3].category,
+            unitPrice: 250.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 250.00,
+          },
+        ],
+      },
+    },
+  });
+
+  // Invoice 20: Grace Kim (Specialist Follow-up - Today) - PAID (₹700)
+  const inv20 = await prisma.invoice.create({
+    data: {
+      invoiceNumber: 'INV-2026-0020',
+      patientId: createdPatients[8].id,
+      type: 'OPD',
+      createdById: receptionistUser.id,
+      issueDate: today,
+      invoiceDate: today,
+      dueDate: today,
+      subtotal: 700.00,
+      taxAmount: 0.00,
+      discountAmount: 0.00,
+      adjustmentAmount: 0.00,
+      refundedAmount: 0.00,
+      totalAmount: 700.00,
+      paidAmount: 700.00,
+      outstandingAmount: 0.00,
+      status: 'PAID',
+      notes: 'Orthopedic joint consultation fee settled at front desk.',
+      items: {
+        create: [
+          {
+            serviceCatalogId: createdServices[1].id,
+            serviceName: 'Orthopedic Joint Specialist Consultation',
+            category: 'Consultation',
+            unitPrice: 700.00,
+            quantity: 1,
+            discount: 0.00,
+            taxRate: 0.00,
+            taxAmount: 0.00,
+            totalPrice: 700.00,
+          },
+        ],
+      },
+    },
+  });
+
+  // 14. 26 Realistic Payments (25 Completed + 1 Voided across Cash, Card, UPI, Bank Transfer, Cheque, Insurance)
+  console.log('Seeding 26 Payments across multi-month historical timeline...');
   const paymentsData = [
+    // Today's Payments
     {
       paymentNumber: 'PAY-2026-0001',
       invoiceId: inv1.id,
       patientId: createdPatients[0].id,
       amount: 1050.00,
       paymentMethod: 'UPI',
+      status: 'COMPLETED',
       referenceNumber: 'UPI-TXN-984210984',
-      paidAt: new Date(Date.now() - 30 * 60 * 1000), // Today
+      paidAt: new Date(Date.now() - 30 * 60 * 1000),
+      paymentDate: today,
       receivedById: receptionistUser.id,
       notes: 'Cleared via PhonePe UPI at desk 2.',
     },
@@ -1239,81 +2126,505 @@ async function main() {
       patientId: createdPatients[5].id,
       amount: 500.00,
       paymentMethod: 'CASH',
+      status: 'COMPLETED',
       referenceNumber: 'CASH-REC-0042',
-      paidAt: new Date(Date.now() - 12 * 60 * 1000), // Today
+      paidAt: new Date(Date.now() - 12 * 60 * 1000),
+      paymentDate: today,
       receivedById: receptionistUser.id,
       notes: 'Cash received and deposited in front desk drawer.',
     },
     {
       paymentNumber: 'PAY-2026-0003',
+      invoiceId: inv20.id,
+      patientId: createdPatients[8].id,
+      amount: 700.00,
+      paymentMethod: 'UPI',
+      status: 'COMPLETED',
+      referenceNumber: 'UPI-TXN-11994432',
+      paidAt: new Date(Date.now() - 5 * 60 * 1000),
+      paymentDate: today,
+      receivedById: receptionistUser.id,
+      notes: 'GPay QR Scan transaction.',
+    },
+    // Yesterday's Payments
+    {
+      paymentNumber: 'PAY-2026-0004',
       invoiceId: inv4.id,
       patientId: createdPatients[2].id,
       amount: 750.00,
       paymentMethod: 'CARD',
+      status: 'COMPLETED',
       referenceNumber: 'POS-AUTH-882194',
       paidAt: yesterday,
+      paymentDate: yesterday,
       receivedById: receptionistUser.id,
       notes: 'Chip & PIN POS Card Transaction (Visa ending 4129).',
     },
     {
-      paymentNumber: 'PAY-2026-0004',
+      paymentNumber: 'PAY-2026-0005',
       invoiceId: inv5.id,
       patientId: createdPatients[9].id,
       amount: 600.00,
       paymentMethod: 'UPI',
+      status: 'COMPLETED',
       referenceNumber: 'UPI-TXN-552190871',
       paidAt: yesterday,
+      paymentDate: yesterday,
       receivedById: receptionistUser.id,
-      notes: 'GPay QR Scan transaction.',
-    },
-    {
-      paymentNumber: 'PAY-2026-0005',
-      invoiceId: inv1.id,
-      patientId: createdPatients[0].id,
-      amount: 250.00,
-      paymentMethod: 'CASH',
-      referenceNumber: 'CASH-REC-0038',
-      paidAt: lastWeek,
-      receivedById: receptionistUser.id,
-      notes: 'Follow-up consultation advance deposit.',
+      notes: 'Emergency triage fee paid via UPI.',
     },
     {
       paymentNumber: 'PAY-2026-0006',
-      invoiceId: inv4.id,
-      patientId: createdPatients[2].id,
-      amount: 400.00,
-      paymentMethod: 'BANK_TRANSFER',
-      referenceNumber: 'NEFT-REF-20260928-881',
-      paidAt: lastWeek,
+      invoiceId: inv19.id,
+      patientId: createdPatients[7].id,
+      amount: 750.00,
+      paymentMethod: 'CARD',
+      status: 'COMPLETED',
+      referenceNumber: 'POS-AUTH-990145',
+      paidAt: yesterday,
+      paymentDate: yesterday,
       receivedById: receptionistUser.id,
-      notes: 'Online corporate health package bank wire.',
+      notes: 'Mastercard swipe at front desk.',
     },
+    // 3 Days Ago Payments
     {
       paymentNumber: 'PAY-2026-0007',
-      invoiceId: inv2.id,
-      patientId: createdPatients[5].id,
-      amount: 200.00,
+      invoiceId: inv18.id,
+      patientId: createdPatients[6].id,
+      amount: 500.00,
       paymentMethod: 'CARD',
-      referenceNumber: 'POS-AUTH-110943',
-      paidAt: lastWeek,
-      receivedById: receptionistUser.id,
-      notes: 'Mastercard POS terminal swipe.',
+      status: 'COMPLETED',
+      referenceNumber: 'POS-AUTH-773311',
+      paidAt: threeDaysAgo,
+      paymentDate: threeDaysAgo,
+      receivedById: accountantUser.id,
+      notes: 'Part payment via Debit Card.',
     },
     {
       paymentNumber: 'PAY-2026-0008',
-      invoiceId: inv5.id,
-      patientId: createdPatients[9].id,
+      invoiceId: inv18.id,
+      patientId: createdPatients[6].id,
+      amount: 550.00,
+      paymentMethod: 'UPI',
+      status: 'COMPLETED',
+      referenceNumber: 'UPI-TXN-66442200',
+      paidAt: threeDaysAgo,
+      paymentDate: threeDaysAgo,
+      receivedById: receptionistUser.id,
+      notes: 'Balance cleared via UPI QR code.',
+    },
+    // 5 Days Ago Payments
+    {
+      paymentNumber: 'PAY-2026-0009',
+      invoiceId: inv17.id,
+      patientId: createdPatients[5].id,
+      amount: 250.00,
+      paymentMethod: 'CASH',
+      status: 'COMPLETED',
+      referenceNumber: 'CASH-REC-0035',
+      paidAt: fiveDaysAgo,
+      paymentDate: fiveDaysAgo,
+      receivedById: receptionistUser.id,
+      notes: 'Split payment - Cash.',
+    },
+    {
+      paymentNumber: 'PAY-2026-0010',
+      invoiceId: inv17.id,
+      patientId: createdPatients[5].id,
+      amount: 250.00,
+      paymentMethod: 'UPI',
+      status: 'COMPLETED',
+      referenceNumber: 'UPI-TXN-331199',
+      paidAt: fiveDaysAgo,
+      paymentDate: fiveDaysAgo,
+      receivedById: receptionistUser.id,
+      notes: 'Split payment - UPI.',
+    },
+    // Last Week Payments
+    {
+      paymentNumber: 'PAY-2026-0011',
+      invoiceId: inv6.id,
+      patientId: createdPatients[7].id,
+      amount: 5000.00,
+      paymentMethod: 'UPI',
+      status: 'COMPLETED',
+      referenceNumber: 'UPI-TXN-44991188',
+      paidAt: lastWeek,
+      paymentDate: lastWeek,
+      receivedById: accountantUser.id,
+      notes: 'Advance screening package booking deposit (now refundable surplus).',
+    },
+    {
+      paymentNumber: 'PAY-2026-0012',
+      invoiceId: inv7.id,
+      patientId: createdPatients[3].id,
       amount: 500.00,
       paymentMethod: 'CASH',
-      referenceNumber: 'CASH-REC-0021',
+      status: 'COMPLETED',
+      referenceNumber: 'CASH-REC-0028',
       paidAt: lastWeek,
+      paymentDate: lastWeek,
       receivedById: receptionistUser.id,
-      notes: 'Emergency stabilization triage initial receipt.',
+      notes: 'Cash deposit receipt.',
+    },
+    {
+      paymentNumber: 'PAY-2026-0013',
+      invoiceId: inv7.id,
+      patientId: createdPatients[3].id,
+      amount: 800.00,
+      paymentMethod: 'CARD',
+      status: 'COMPLETED',
+      referenceNumber: 'POS-AUTH-665544',
+      paidAt: lastWeek,
+      paymentDate: lastWeek,
+      receivedById: accountantUser.id,
+      notes: 'Remaining invoice balance paid via Card.',
+    },
+    // 2 Weeks Ago Payments
+    {
+      paymentNumber: 'PAY-2026-0014',
+      invoiceId: inv8.id,
+      patientId: createdPatients[1].id,
+      amount: 1450.00,
+      paymentMethod: 'CARD',
+      status: 'COMPLETED',
+      referenceNumber: 'POS-AUTH-554433',
+      paidAt: twoWeeksAgo,
+      paymentDate: twoWeeksAgo,
+      receivedById: receptionistUser.id,
+      notes: 'Initial full invoice payment via POS terminal.',
+    },
+    {
+      paymentNumber: 'PAY-2026-0015',
+      invoiceId: inv9.id,
+      patientId: createdPatients[4].id,
+      amount: 378.22,
+      paymentMethod: 'UPI',
+      status: 'COMPLETED',
+      referenceNumber: 'UPI-TXN-22884411',
+      paidAt: twoWeeksAgo,
+      paymentDate: twoWeeksAgo,
+      receivedById: pharmacistUser.id,
+      notes: 'Pharmacy counter instant QR payment.',
+    },
+    // Last Month Payments
+    {
+      paymentNumber: 'PAY-2026-0016',
+      invoiceId: inv11.id,
+      patientId: createdPatients[9].id,
+      amount: 700.00,
+      paymentMethod: 'CASH',
+      status: 'COMPLETED',
+      referenceNumber: 'CASH-REC-0019',
+      paidAt: lastMonth,
+      paymentDate: lastMonth,
+      receivedById: receptionistUser.id,
+      notes: 'Emergency partial bill payment in Cash.',
+    },
+    {
+      paymentNumber: 'PAY-2026-0017',
+      invoiceId: inv12.id,
+      patientId: createdPatients[0].id,
+      amount: 2000.00,
+      paymentMethod: 'BANK_TRANSFER',
+      status: 'COMPLETED',
+      referenceNumber: 'NEFT-REF-20260910-449',
+      paidAt: lastMonth,
+      paymentDate: lastMonth,
+      receivedById: accountantUser.id,
+      notes: 'NEFT bank transfer from corporate patient account.',
+    },
+    {
+      paymentNumber: 'PAY-2026-0018',
+      invoiceId: inv12.id,
+      patientId: createdPatients[0].id,
+      amount: 2000.00,
+      paymentMethod: 'OTHER',
+      status: 'COMPLETED',
+      referenceNumber: 'INS-CLAIM-HDFC-99120',
+      paidAt: lastMonth,
+      paymentDate: lastMonth,
+      receivedById: seniorAccountantUser.id,
+      notes: 'Third-party TPA cashless insurance pre-authorized settlement.',
+    },
+    // 6 Weeks Ago Payments (1 Voided + 1 Re-collected)
+    {
+      paymentNumber: 'PAY-2026-0019',
+      invoiceId: inv13.id,
+      patientId: createdPatients[1].id,
+      amount: 750.00,
+      paymentMethod: 'CASH',
+      status: 'VOIDED',
+      referenceNumber: 'CASH-REC-0011-VOID',
+      paidAt: sixWeeksAgo,
+      paymentDate: sixWeeksAgo,
+      receivedById: accountantUser.id,
+      voidedAt: sixWeeksAgo,
+      voidedById: accountantUser.id,
+      voidReason: 'Counterfeit note detected during verification; re-collected via UPI.',
+      notes: 'Voided cash transaction record.',
+    },
+    {
+      paymentNumber: 'PAY-2026-0020',
+      invoiceId: inv13.id,
+      patientId: createdPatients[1].id,
+      amount: 750.00,
+      paymentMethod: 'UPI',
+      status: 'COMPLETED',
+      referenceNumber: 'UPI-TXN-88114400',
+      paidAt: sixWeeksAgo,
+      paymentDate: sixWeeksAgo,
+      receivedById: accountantUser.id,
+      notes: 'Re-collected via UPI following cash void.',
+    },
+    // 2 Months Ago Payments
+    {
+      paymentNumber: 'PAY-2026-0021',
+      invoiceId: inv14.id,
+      patientId: createdPatients[2].id,
+      amount: 1150.00,
+      paymentMethod: 'OTHER',
+      status: 'COMPLETED',
+      referenceNumber: 'CHQ-SBI-884129',
+      paidAt: twoMonthsAgo,
+      paymentDate: twoMonthsAgo,
+      receivedById: accountantUser.id,
+      notes: 'Cleared account payee cheque from SBI.',
+    },
+    {
+      paymentNumber: 'PAY-2026-0022',
+      invoiceId: inv15.id,
+      patientId: createdPatients[3].id,
+      amount: 500.00,
+      paymentMethod: 'CASH',
+      status: 'COMPLETED',
+      referenceNumber: 'CASH-REC-0005',
+      paidAt: twoMonthsAgo,
+      paymentDate: twoMonthsAgo,
+      receivedById: receptionistUser.id,
+      notes: 'Installment 1 of 3 (Cash).',
+    },
+    {
+      paymentNumber: 'PAY-2026-0023',
+      invoiceId: inv15.id,
+      patientId: createdPatients[3].id,
+      amount: 500.00,
+      paymentMethod: 'CASH',
+      status: 'COMPLETED',
+      referenceNumber: 'CASH-REC-0006',
+      paidAt: twoMonthsAgo,
+      paymentDate: twoMonthsAgo,
+      receivedById: receptionistUser.id,
+      notes: 'Installment 2 of 3 (Cash).',
+    },
+    {
+      paymentNumber: 'PAY-2026-0024',
+      invoiceId: inv15.id,
+      patientId: createdPatients[3].id,
+      amount: 450.00,
+      paymentMethod: 'UPI',
+      status: 'COMPLETED',
+      referenceNumber: 'UPI-TXN-77330011',
+      paidAt: twoMonthsAgo,
+      paymentDate: twoMonthsAgo,
+      receivedById: receptionistUser.id,
+      notes: 'Installment 3 of 3 (UPI Final Balance).',
+    },
+    {
+      paymentNumber: 'PAY-2026-0025',
+      invoiceId: inv16.id,
+      patientId: createdPatients[4].id,
+      amount: 600.00,
+      paymentMethod: 'UPI',
+      status: 'COMPLETED',
+      referenceNumber: 'UPI-TXN-11002299',
+      paidAt: twoMonthsAgo,
+      paymentDate: twoMonthsAgo,
+      receivedById: receptionistUser.id,
+      notes: 'Initial fee payment (subsequently fully refunded).',
     },
   ];
 
+  const createdPayments = {};
   for (const pay of paymentsData) {
-    await prisma.payment.create({ data: pay });
+    const createdPay = await prisma.payment.create({ data: pay });
+    createdPayments[pay.paymentNumber] = createdPay;
+  }
+
+  // 14b. 4 Refunds across all 4 Statuses (REQUESTED, APPROVED, PROCESSED, REJECTED)
+  console.log('Seeding 4 Refunds covering full approval lifecycle...');
+  await prisma.refund.create({
+    data: {
+      refundNumber: 'REF-2026-0001',
+      invoiceId: inv6.id,
+      paymentId: createdPayments['PAY-2026-0011'].id,
+      amount: 5000.00,
+      reason: 'Full surplus refund for cancelled health screening package booking.',
+      status: 'APPROVED',
+      refundMethod: 'UPI',
+      requestedById: accountantUser.id,
+      approvedById: seniorAccountantUser.id,
+      approvedAt: twoDaysAgo,
+      createdAt: threeDaysAgo,
+    },
+  });
+
+  await prisma.refund.create({
+    data: {
+      refundNumber: 'REF-2026-0002',
+      invoiceId: inv8.id,
+      paymentId: createdPayments['PAY-2026-0014'].id,
+      amount: 450.00,
+      reason: 'Lipid profile test cancelled before specimen collection.',
+      status: 'PROCESSED',
+      refundMethod: 'CARD',
+      referenceNumber: 'REF-POS-883910',
+      requestedById: receptionistUser.id,
+      approvedById: seniorAccountantUser.id,
+      approvedAt: lastWeek,
+      processedById: accountantUser.id,
+      processedAt: lastWeek,
+      createdAt: lastWeek,
+    },
+  });
+
+  await prisma.refund.create({
+    data: {
+      refundNumber: 'REF-2026-0003',
+      invoiceId: inv16.id,
+      paymentId: createdPayments['PAY-2026-0025'].id,
+      amount: 600.00,
+      reason: 'Doctor emergency leave; pediatric appointment cancelled.',
+      status: 'PROCESSED',
+      refundMethod: 'UPI',
+      referenceNumber: 'UPI-REF-99001122',
+      requestedById: receptionistUser.id,
+      approvedById: seniorAccountantUser.id,
+      approvedAt: twoMonthsAgo,
+      processedById: accountantUser.id,
+      processedAt: twoMonthsAgo,
+      createdAt: twoMonthsAgo,
+    },
+  });
+
+  await prisma.refund.create({
+    data: {
+      refundNumber: 'REF-2026-0004',
+      invoiceId: inv1.id,
+      paymentId: createdPayments['PAY-2026-0001'].id,
+      amount: 350.00,
+      reason: 'Patient disputed ECG charge claiming procedure was brief.',
+      status: 'REJECTED',
+      requestedById: receptionistUser.id,
+      rejectionReason: 'Clinical audit confirmed 12-lead ECG tracing was recorded and verified by cardiologist.',
+      createdAt: yesterday,
+    },
+  });
+
+  // 14c. 7 Realistic Expenses across Categories
+  console.log('Seeding 7 Hospital Operational & Capital Expenses...');
+  const expensesData = [
+    {
+      expenseNumber: 'EXP-2026-0001',
+      category: 'Medical Supplies',
+      amount: 45000.00,
+      vendor: 'MedTech Supplies India Pvt Ltd',
+      description: 'Bulk purchase of sterile surgical gloves, IV cannulas & disposable syringes',
+      paymentMethod: 'BANK_TRANSFER',
+      referenceNumber: 'NEFT-EXP-20260920-112',
+      status: 'RECORDED',
+      expenseDate: lastWeek,
+      createdById: accountantUser.id,
+      createdAt: lastWeek,
+      notes: 'Quarterly supply batch delivered to Central Stores.',
+    },
+    {
+      expenseNumber: 'EXP-2026-0002',
+      category: 'Facility & Utilities',
+      amount: 18500.00,
+      vendor: 'State Electricity Supply Board',
+      description: 'Monthly electricity and central air conditioning utility bill',
+      paymentMethod: 'BANK_TRANSFER',
+      referenceNumber: 'NEFT-EXP-20260915-883',
+      status: 'RECORDED',
+      expenseDate: twoWeeksAgo,
+      createdById: accountantUser.id,
+      createdAt: twoWeeksAgo,
+      notes: 'Direct institutional utility bill settlement.',
+    },
+    {
+      expenseNumber: 'EXP-2026-0003',
+      category: 'Equipment Maintenance',
+      amount: 8200.00,
+      vendor: 'Apex Biomed Services',
+      description: 'Quarterly preventive maintenance and calibration of automated hematology analyzer & Rest ECG',
+      paymentMethod: 'UPI',
+      referenceNumber: 'UPI-EXP-77441199',
+      status: 'RECORDED',
+      expenseDate: lastMonth,
+      createdById: accountantUser.id,
+      createdAt: lastMonth,
+      notes: 'Service engineer report attached and verified by Lab Verifier.',
+    },
+    {
+      expenseNumber: 'EXP-2026-0004',
+      category: 'Equipment Maintenance',
+      amount: 125000.00,
+      vendor: 'Siemens Healthineers India',
+      description: 'Digital X-Ray collimator tube replacement & digital detector sensor upgrade',
+      paymentMethod: 'BANK_TRANSFER',
+      referenceNumber: 'NEFT-EXP-20260825-990',
+      status: 'RECORDED',
+      expenseDate: sixWeeksAgo,
+      createdById: seniorAccountantUser.id,
+      createdAt: sixWeeksAgo,
+      notes: 'Capital expenditure authorized by Finance Committee.',
+    },
+    {
+      expenseNumber: 'EXP-2026-0005',
+      category: 'Staff & Training',
+      amount: 350000.00,
+      vendor: 'MedCore Payroll Operations',
+      description: 'Monthly disbursements for nursing, technical, and housekeeping staff',
+      paymentMethod: 'BANK_TRANSFER',
+      referenceNumber: 'NEFT-EXP-20260901-001',
+      status: 'RECORDED',
+      expenseDate: lastMonth,
+      createdById: seniorAccountantUser.id,
+      createdAt: lastMonth,
+      notes: 'Monthly institutional payroll batch execution.',
+    },
+    {
+      expenseNumber: 'EXP-2026-0006',
+      category: 'Administrative',
+      amount: 12400.00,
+      vendor: 'QuickPrint Solutions Ltd',
+      description: 'Hospital patient registration booklets, prescription pads, and RFID badge stock',
+      paymentMethod: 'CASH',
+      referenceNumber: 'CASH-VCH-202609-082',
+      status: 'RECORDED',
+      expenseDate: yesterday,
+      createdById: accountantUser.id,
+      createdAt: yesterday,
+      notes: 'Approved for cash disbursement at finance counter.',
+    },
+    {
+      expenseNumber: 'EXP-2026-0007',
+      category: 'Other',
+      amount: 4500.00,
+      vendor: 'PureAqua Commercial RO Systems',
+      description: 'Hospital centralized drinking water RO plant membrane replacement and sanitation',
+      paymentMethod: 'UPI',
+      status: 'RECORDED',
+      expenseDate: today,
+      createdById: accountantUser.id,
+      createdAt: today,
+      notes: 'Awaiting senior accountant authorization.',
+    },
+  ];
+
+  for (const exp of expensesData) {
+    await prisma.expense.create({ data: exp });
   }
 
   // 15. 3 Emergency Registrations
@@ -1973,30 +3284,11 @@ async function main() {
     },
   });
 
-  // Link to Thomas Wright's Invoice
-  const thomasInvoice = await prisma.invoice.findFirst({
-    where: { patientId: rx4.patientId },
+  // Link to Pharmacy Dispensary Invoice
+  await prisma.dispensing.update({
+    where: { id: dispensing1.id },
+    data: { invoiceId: inv9.id },
   });
-  if (thomasInvoice) {
-    await prisma.invoiceItem.create({
-      data: {
-        invoiceId: thomasInvoice.id,
-        serviceName: 'Pharmacy: Metformin 500mg (30 Tablets)',
-        category: 'Pharmacy',
-        source: 'PHARMACY',
-        dispensingItemId: dispensing1.items[0].id,
-        unitPrice: unitPrice,
-        quantity: dispenseQty,
-        totalPrice: totalAmount,
-        createdAt: yesterday,
-      },
-    });
-
-    await prisma.dispensing.update({
-      where: { id: dispensing1.id },
-      data: { invoiceId: thomasInvoice.id },
-    });
-  }
 
   // ── 20. Pharmacist Notifications ──
   console.log('Seeding Pharmacist Notifications...');
@@ -2410,25 +3702,6 @@ async function main() {
       },
     },
   });
-
-  // Attach Lab Line Item to Open Invoice #INV-2026-0001
-  const existingInvoice1 = await prisma.invoice.findFirst({
-    where: { patientId: createdPatients[0].id },
-  });
-  if (existingInvoice1) {
-    await prisma.invoiceItem.create({
-      data: {
-        invoiceId: existingInvoice1.id,
-        serviceName: createdLabTests[4].name,
-        category: 'Diagnostic',
-        source: 'LAB',
-        labTestOrderItemId: order1Item1.id,
-        unitPrice: createdLabTests[4].price,
-        quantity: 1,
-        totalPrice: createdLabTests[4].price,
-      },
-    });
-  }
 
   // Order 2: Routine CBC + Lipid for Elena Rostova (Dr. Sarah Chen) -> RELEASED (HIGH Cholesterol)
   const order2 = await prisma.labTestOrder.create({
@@ -2911,11 +4184,56 @@ async function main() {
     },
   });
 
-  console.log('✅ Seed completed successfully with full Multi-Role Dataset (Doctor + Nurse + Receptionist + Pharmacist + Lab Technician)!');
+  // 25. Seed Accountant & Finance Notifications
+  console.log('Seeding Accountant Staff Notifications...');
+  await prisma.notification.create({
+    data: {
+      userId: seniorAccountantUser.id,
+      title: 'Refund Request Pending Approval',
+      message: 'Refund Request #REF-2026-0001 (₹5,000.00 for Liam O\'Connor) is awaiting your executive authorization.',
+      type: 'URGENT',
+      isRead: false,
+      entityType: 'Refund',
+    },
+  });
+
+  await prisma.notification.create({
+    data: {
+      userId: accountantUser.id,
+      title: 'Daily Billing Settlement Complete',
+      message: 'All 3 POS card terminal batches reconciled with ₹2,900.00 cleared to bank ledger.',
+      type: 'INFO',
+      isRead: true,
+      readAt: new Date(Date.now() - 1 * 3600000),
+    },
+  });
+
+  await prisma.notification.create({
+    data: {
+      userId: accountantUser.id,
+      title: 'Overdue Outstanding Alert',
+      message: 'Invoice #INV-2026-0010 (Sophia Martinez) has ₹2,750.00 balance overdue by 14 days.',
+      type: 'WARNING',
+      isRead: false,
+      entityType: 'Invoice',
+      entityId: inv10.id,
+    },
+  });
+
+  // 26. Run Zero-Tolerance Financial Integrity Check
+  console.log('Running Zero-Tolerance Financial Integrity Audit...');
+  const verifyFinancialIntegrity = require('../scripts/verifyFinancialIntegrity');
+  const isAuditValid = await verifyFinancialIntegrity();
+  if (!isAuditValid) {
+    throw new Error('Zero-Tolerance Financial Integrity Audit Failed during seed!');
+  }
+
+  console.log('✅ Seed completed successfully with full Multi-Role Dataset (Doctor + Nurse + Receptionist + Pharmacist + Lab Technician + Accountant)!');
   console.log(`- 1 Hospital`);
   console.log(`- 1 Receptionist user (receptionist@medcore.health / Receptionist@123) & profile created`);
   console.log(`- 1 Pharmacist user (pharmacist@medcore.health / Pharmacist@123) & profile created`);
   console.log(`- 2 Lab Technician users (lab@medcore.health, lab_verifier@medcore.health / Lab@123) & profiles created`);
+  console.log(`- 2 Accountant users (accountant@medcore.health, finance_head@medcore.health / Accountant@123) & profiles created`);
   console.log(`- 5 Doctors across 3 Departments created with full weekly schedules`);
   console.log(`- 2 Nurses created with active assignments`);
   console.log(`- 10 Realistic Patients created with unique IDs`);
@@ -2928,10 +4246,13 @@ async function main() {
   console.log(`- 8 Hospital Beds across 3 Wards created`);
   console.log(`- 3 Inpatient Admissions created`);
   console.log(`- 15 Doctor Appointments across today/upcoming/past with checked-in & waiting status`);
-  console.log(`- 5 Invoices (Pending, Partially Paid, Paid) created with Lab & Pharmacy line items`);
-  console.log(`- 8 Payments across Cash, Card, UPI, and Bank Transfer created`);
+  console.log(`- 20 Invoices (Pending, Partially Paid, Paid, Cancelled, Refunded) across 3 months`);
+  console.log(`- 26 Payments (25 Completed + 1 Voided) across Cash, Card, UPI, Bank Transfer, Cheque, Insurance`);
+  console.log(`- 4 Refunds (Requested, Approved, Processed, Rejected) created`);
+  console.log(`- 7 Operational & Capital Expenses created across categories`);
   console.log(`- 3 Emergency Registrations created`);
-  console.log(`- Notifications created for Receptionist, Doctor, Nurse, Pharmacist, and Lab Technician`);
+  console.log(`- Notifications created for all roles including Accountant`);
+  console.log('🏆 Zero-Tolerance Financial Integrity Check PASSED with 0 violations!');
 }
 
 main()

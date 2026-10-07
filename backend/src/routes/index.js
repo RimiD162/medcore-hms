@@ -5,6 +5,7 @@ const nurseRoutes = require('./nurseRoutes');
 const receptionistRoutes = require('./receptionistRoutes');
 const pharmacistRoutes = require('./pharmacistRoutes');
 const labRoutes = require('./labRoutes');
+const accountantRoutes = require('./accountantRoutes');
 
 const router = express.Router();
 
@@ -19,6 +20,8 @@ router.use('/pharmacist', pharmacistRoutes);
 router.use('/pharmacists', pharmacistRoutes); // Alias for pharmacist routes
 router.use('/lab', labRoutes);
 router.use('/labs', labRoutes); // Alias for lab routes
+router.use('/accountant', accountantRoutes);
+router.use('/accountants', accountantRoutes); // Alias for accountant routes
 
 module.exports = router;
 

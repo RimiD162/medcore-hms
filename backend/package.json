@@ -9,7 +9,8 @@
     "prisma:generate": "npx prisma generate",
     "prisma:db:push": "npx prisma db push",
     "prisma:seed": "node prisma/seed.js",
-    "test": "node --test src/tests/**/*.test.js"
+    "integrity:check": "node scripts/verifyFinancialIntegrity.js",
+    "test": "node --test --test-concurrency=1 src/tests/**/*.test.js"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",

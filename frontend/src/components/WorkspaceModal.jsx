@@ -124,6 +124,32 @@ export const WorkspaceModal = ({ selectedRole, onClose, onShowToast }) => {
                 <ArrowRight size={14} />
               </button>
             )}
+            {currentRole.id === 'accountant' && (
+              <button
+                type="button"
+                className="modal-action-pill"
+                style={{
+                  background: 'linear-gradient(135deg, #d97706, #f59e0b)',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+                onClick={() => {
+                  onClose();
+                  window.location.href = '/app/accountant';
+                }}
+              >
+                <FileSpreadsheet size={16} />
+                <span>Launch Live Finance Hub</span>
+                <ArrowRight size={14} />
+              </button>
+            )}
             <button className="modal-close-btn" onClick={onClose} aria-label="Close modal">
               <X size={20} />
             </button>

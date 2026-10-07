@@ -1,6 +1,7 @@
 const prisma = require('../config/prisma');
 const ApiError = require('../utils/ApiError');
 const { generateLabOrderNumber, generateLabSampleCode } = require('../utils/patientIdGenerator');
+const { calculateInvoiceTotals } = require('../utils/financeMoney');
 
 class LabOrderService {
   get patientDemographicSelect() {
@@ -431,6 +432,33 @@ class LabOrderService {
             },
           });
         }
+
+        const fullInvoice = await tx.invoice.findUnique({
+          where: { id: openInvoice.id },
+          include: { items: true, adjustments: true, payments: true, refunds: true },
+        });
+        const totals = calculateInvoiceTotals({
+          items: fullInvoice.items,
+          adjustments: fullInvoice.adjustments,
+          payments: fullInvoice.payments,
+          refunds: fullInvoice.refunds,
+          isCancelled: fullInvoice.status === 'CANCELLED',
+        });
+
+        await tx.invoice.update({
+          where: { id: openInvoice.id },
+          data: {
+            subtotal: totals.subtotal,
+            discountAmount: totals.discountAmount,
+            taxAmount: totals.taxAmount,
+            totalAmount: totals.totalAmount,
+            adjustmentAmount: totals.adjustmentAmount,
+            paidAmount: totals.paidAmount,
+            refundedAmount: totals.refundedAmount,
+            outstandingAmount: totals.outstandingAmount,
+            status: totals.status,
+          },
+        });
       }
 
       return order;

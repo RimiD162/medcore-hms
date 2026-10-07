@@ -86,6 +86,20 @@ import LabHistoryAuditPage from '../pages/lab/LabHistoryAuditPage';
 import LabNotificationsPage from '../pages/lab/LabNotificationsPage';
 import LabProfilePage from '../pages/lab/LabProfilePage';
 
+// Accountant / Finance Pages
+import AccountantDashboardPage from '../pages/accountant/AccountantDashboardPage';
+import AccountantInvoicesPage from '../pages/accountant/AccountantInvoicesPage';
+import AccountantInvoiceCreatePage from '../pages/accountant/AccountantInvoiceCreatePage';
+import AccountantInvoiceDetailPage from '../pages/accountant/AccountantInvoiceDetailPage';
+import AccountantPaymentsPage from '../pages/accountant/AccountantPaymentsPage';
+import AccountantOutstandingPage from '../pages/accountant/AccountantOutstandingPage';
+import AccountantRefundsPage from '../pages/accountant/AccountantRefundsPage';
+import AccountantExpensesPage from '../pages/accountant/AccountantExpensesPage';
+import AccountantTransactionsPage from '../pages/accountant/AccountantTransactionsPage';
+import AccountantReportsPage from '../pages/accountant/AccountantReportsPage';
+import AccountantNotificationsPage from '../pages/accountant/AccountantNotificationsPage';
+import AccountantProfilePage from '../pages/accountant/AccountantProfilePage';
+
 export const AppRouter = () => {
   const [theme, setTheme] = useState('light');
   const [showPatientModal, setShowPatientModal] = useState(false);
@@ -134,6 +148,10 @@ export const AppRouter = () => {
       localStorage.setItem('medcore_auth_token', 'demo-lab-token');
       navigate('/app/lab');
       showToast(`Welcome Alex Mercer, MLS! Logged in as ${role.title}.`);
+    } else if (role.id === 'accountant') {
+      localStorage.setItem('medcore_auth_token', 'demo-accountant-token');
+      navigate('/app/accountant');
+      showToast(`Welcome David Sterling, CA! Logged in as ${role.title}.`);
     } else {
       navigate('/staff-roles');
       showToast(`Logged in as ${role.title} (${role.subtitle})`);
@@ -317,6 +335,32 @@ export const AppRouter = () => {
           <Route path="audit-history" element={<LabHistoryAuditPage />} />
           <Route path="notifications" element={<LabNotificationsPage />} />
           <Route path="profile" element={<LabProfilePage />} />
+        </Route>
+
+        {/* 8. Accountant / Finance Module Shell & Nested Routes */}
+        <Route
+          path="/app/accountant"
+          element={
+            <AppLayout
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              onShowToast={showToast}
+            />
+          }
+        >
+          <Route index element={<AccountantDashboardPage />} />
+          <Route path="dashboard" element={<AccountantDashboardPage />} />
+          <Route path="invoices" element={<AccountantInvoicesPage />} />
+          <Route path="invoices/new" element={<AccountantInvoiceCreatePage />} />
+          <Route path="invoices/:id" element={<AccountantInvoiceDetailPage />} />
+          <Route path="payments" element={<AccountantPaymentsPage />} />
+          <Route path="outstanding" element={<AccountantOutstandingPage />} />
+          <Route path="refunds" element={<AccountantRefundsPage />} />
+          <Route path="expenses" element={<AccountantExpensesPage />} />
+          <Route path="transactions" element={<AccountantTransactionsPage />} />
+          <Route path="reports" element={<AccountantReportsPage />} />
+          <Route path="notifications" element={<AccountantNotificationsPage />} />
+          <Route path="profile" element={<AccountantProfilePage />} />
         </Route>
 
         {/* Fallback */}
