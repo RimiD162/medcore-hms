@@ -6,6 +6,8 @@ const receptionistRoutes = require('./receptionistRoutes');
 const pharmacistRoutes = require('./pharmacistRoutes');
 const labRoutes = require('./labRoutes');
 const accountantRoutes = require('./accountantRoutes');
+const patientRoutes = require('./patientRoutes');
+const patientAuthRoutes = require('./patientAuthRoutes');
 
 const router = express.Router();
 
@@ -22,6 +24,9 @@ router.use('/lab', labRoutes);
 router.use('/labs', labRoutes); // Alias for lab routes
 router.use('/accountant', accountantRoutes);
 router.use('/accountants', accountantRoutes); // Alias for accountant routes
+router.use('/auth/patient', patientAuthRoutes);
+router.use('/patient', patientRoutes);
+router.use('/patients', patientRoutes); // Alias for patient portal routes
 
 module.exports = router;
 

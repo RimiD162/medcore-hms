@@ -5,6 +5,7 @@ import StaffRolesPage from '../components/StaffRolesPage';
 import PatientPortalModal from '../components/PatientPortalModal';
 import AuthModal from '../components/AuthModal';
 import AppLayout from '../components/layout/AppLayout';
+import PatientLayout from '../components/layout/PatientLayout';
 import { CheckCircle2 } from 'lucide-react';
 
 // Doctor Pages
@@ -100,6 +101,31 @@ import AccountantReportsPage from '../pages/accountant/AccountantReportsPage';
 import AccountantNotificationsPage from '../pages/accountant/AccountantNotificationsPage';
 import AccountantProfilePage from '../pages/accountant/AccountantProfilePage';
 
+// Patient Portal Pages
+import PatientDashboardPage from '../pages/patient/PatientDashboardPage';
+import PatientProfilePage from '../pages/patient/PatientProfilePage';
+import PatientAppointmentsPage from '../pages/patient/PatientAppointmentsPage';
+import PatientAppointmentBookPage from '../pages/patient/PatientAppointmentBookPage';
+import PatientAppointmentDetailPage from '../pages/patient/PatientAppointmentDetailPage';
+import PatientMedicalRecordsPage from '../pages/patient/PatientMedicalRecordsPage';
+import PatientMedicalRecordDetailPage from '../pages/patient/PatientMedicalRecordDetailPage';
+import PatientPrescriptionsPage from '../pages/patient/PatientPrescriptionsPage';
+import PatientPrescriptionDetailPage from '../pages/patient/PatientPrescriptionDetailPage';
+import PatientLabReportsPage from '../pages/patient/PatientLabReportsPage';
+import PatientLabReportDetailPage from '../pages/patient/PatientLabReportDetailPage';
+import PatientBillingPage from '../pages/patient/PatientBillingPage';
+import PatientInvoiceDetailPage from '../pages/patient/PatientInvoiceDetailPage';
+import PatientPaymentsPage from '../pages/patient/PatientPaymentsPage';
+import PatientDocumentsPage from '../pages/patient/PatientDocumentsPage';
+import PatientInsurancePage from '../pages/patient/PatientInsurancePage';
+import PatientTimelinePage from '../pages/patient/PatientTimelinePage';
+import PatientSearchPage from '../pages/patient/PatientSearchPage';
+import PatientNotificationsPage from '../pages/patient/PatientNotificationsPage';
+import PatientSettingsPage from '../pages/patient/PatientSettingsPage';
+import PatientLoginPage from '../pages/patient/PatientLoginPage';
+import PatientRegisterPage from '../pages/patient/PatientRegisterPage';
+import PatientForgotPasswordPage from '../pages/patient/PatientForgotPasswordPage';
+
 export const AppRouter = () => {
   const [theme, setTheme] = useState('light');
   const [showPatientModal, setShowPatientModal] = useState(false);
@@ -152,6 +178,11 @@ export const AppRouter = () => {
       localStorage.setItem('medcore_auth_token', 'demo-accountant-token');
       navigate('/app/accountant');
       showToast(`Welcome David Sterling, CA! Logged in as ${role.title}.`);
+    } else if (role.id === 'patient') {
+      localStorage.setItem('medcore_auth_token', 'demo-patient-token');
+      localStorage.setItem('medcore_patient_token', 'demo-patient-token');
+      navigate('/app/patient/dashboard');
+      showToast('Welcome to MedCore Patient Portal!');
     } else {
       navigate('/staff-roles');
       showToast(`Logged in as ${role.title} (${role.subtitle})`);
@@ -173,7 +204,9 @@ export const AppRouter = () => {
                 navigate('/staff-roles');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              onSelectPatient={() => setShowPatientModal(true)}
+              onSelectPatient={() => {
+                navigate('/app/patient/dashboard');
+              }}
             />
           }
         />
@@ -195,7 +228,50 @@ export const AppRouter = () => {
           }
         />
 
-        {/* 3. Doctor Module Shell & Nested Routes */}
+        {/* 3. Patient Portal Public Auth Routes */}
+        <Route path="/portal/login" element={<PatientLoginPage />} />
+        <Route path="/portal/register" element={<PatientRegisterPage />} />
+        <Route path="/portal/forgot-password" element={<PatientForgotPasswordPage />} />
+
+        {/* 4. Patient Portal Application Shell & Nested Routes */}
+        <Route
+          path="/app/patient"
+          element={
+            <PatientLayout
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              onShowToast={showToast}
+            />
+          }
+        >
+          <Route index element={<PatientDashboardPage />} />
+          <Route path="dashboard" element={<PatientDashboardPage />} />
+          <Route path="profile" element={<PatientProfilePage />} />
+          <Route path="appointments" element={<PatientAppointmentsPage />} />
+          <Route path="appointments/book" element={<PatientAppointmentBookPage />} />
+          <Route path="appointments/:appointmentId" element={<PatientAppointmentDetailPage />} />
+          <Route path="medical-records" element={<PatientMedicalRecordsPage />} />
+          <Route path="medical-records/:recordId" element={<PatientMedicalRecordDetailPage />} />
+          <Route path="prescriptions" element={<PatientPrescriptionsPage />} />
+          <Route path="prescriptions/:prescriptionId" element={<PatientPrescriptionDetailPage />} />
+          <Route path="lab-reports" element={<PatientLabReportsPage />} />
+          <Route path="lab-reports/:reportId" element={<PatientLabReportDetailPage />} />
+          <Route path="billing" element={<PatientBillingPage />} />
+          <Route path="billing/:invoiceId" element={<PatientInvoiceDetailPage />} />
+          <Route path="payments" element={<PatientPaymentsPage />} />
+          <Route path="documents" element={<PatientDocumentsPage />} />
+          <Route path="insurance" element={<PatientInsurancePage />} />
+          <Route path="timeline" element={<PatientTimelinePage />} />
+          <Route path="search" element={<PatientSearchPage />} />
+          <Route path="notifications" element={<PatientNotificationsPage />} />
+          <Route path="settings" element={<PatientSettingsPage />} />
+        </Route>
+
+        {/* Patient Route Aliases */}
+        <Route path="/patient" element={<Navigate to="/app/patient/dashboard" replace />} />
+        <Route path="/patient/*" element={<Navigate to="/app/patient/dashboard" replace />} />
+
+        {/* 5. Doctor Module Shell & Nested Routes */}
         <Route
           path="/app/doctor"
           element={
@@ -222,7 +298,7 @@ export const AppRouter = () => {
           <Route path="availability" element={<DoctorAvailabilityPage />} />
         </Route>
 
-        {/* 4. Nurse Module Shell & Nested Routes */}
+        {/* 6. Nurse Module Shell & Nested Routes */}
         <Route
           path="/app/nurse"
           element={
@@ -248,7 +324,7 @@ export const AppRouter = () => {
           <Route path="profile" element={<NurseProfilePage />} />
         </Route>
 
-        {/* 5. Receptionist Module Shell & Nested Routes */}
+        {/* 7. Receptionist Module Shell & Nested Routes */}
         <Route
           path="/app/receptionist"
           element={
@@ -276,7 +352,7 @@ export const AppRouter = () => {
           <Route path="profile" element={<ReceptionistProfilePage />} />
         </Route>
 
-        {/* 6. Pharmacist Module Shell & Nested Routes */}
+        {/* 8. Pharmacist Module Shell & Nested Routes */}
         <Route
           path="/app/pharmacist"
           element={
@@ -307,7 +383,7 @@ export const AppRouter = () => {
           <Route path="profile" element={<PharmacistProfilePage />} />
         </Route>
 
-        {/* 7. Laboratory Technician Module Shell & Nested Routes */}
+        {/* 9. Laboratory Technician Module Shell & Nested Routes */}
         <Route
           path="/app/lab"
           element={
@@ -337,7 +413,7 @@ export const AppRouter = () => {
           <Route path="profile" element={<LabProfilePage />} />
         </Route>
 
-        {/* 8. Accountant / Finance Module Shell & Nested Routes */}
+        {/* 10. Accountant / Finance Module Shell & Nested Routes */}
         <Route
           path="/app/accountant"
           element={
@@ -367,7 +443,7 @@ export const AppRouter = () => {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
-      {/* Patient Portal Modal */}
+      {/* Patient Portal Modal Quick Preview */}
       {showPatientModal && (
         <PatientPortalModal
           onClose={() => setShowPatientModal(false)}
@@ -396,4 +472,3 @@ export const AppRouter = () => {
 };
 
 export default AppRouter;
-

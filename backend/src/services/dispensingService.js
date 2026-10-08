@@ -365,8 +365,8 @@ class DispensingService {
           invoice: {
             id: invoice.id,
             invoiceNumber: invoice.invoiceNumber,
-            totalAmount: newTotal,
-            outstandingAmount: newOutstanding,
+            totalAmount: calculatedTotals.totalAmount,
+            outstandingAmount: calculatedTotals.outstandingAmount,
           },
         };
       },

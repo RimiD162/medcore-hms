@@ -13,7 +13,12 @@ export const axiosClient = axios.create({
 // Request interceptor to attach bearer token if present
 axiosClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('medcore_auth_token') || 'demo-doctor-token';
+    const isPatientContext =
+      (typeof window !== 'undefined' && (window.location.pathname.startsWith('/app/patient') || window.location.pathname.startsWith('/patient'))) ||
+      config.url?.includes('/patient');
+    const token =
+      localStorage.getItem('medcore_auth_token') ||
+      (isPatientContext ? 'demo-patient-token' : 'demo-doctor-token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

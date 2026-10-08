@@ -12,6 +12,10 @@ async function main() {
     try {
       await prisma.$executeRawUnsafe(`
         TRUNCATE TABLE 
+          insurance_claims,
+          insurance_policies,
+          payment_attempts,
+          portal_invites,
           expenses,
           refunds,
           invoice_adjustments,
@@ -93,6 +97,7 @@ async function main() {
   const pharmacistPasswordHash = await bcrypt.hash('Pharmacist@123', 10);
   const labPasswordHash = await bcrypt.hash('Lab@123', 10);
   const accountantPasswordHash = await bcrypt.hash('Accountant@123', 10);
+  const patientPasswordHash = await bcrypt.hash('Patient@123', 10);
 
   // 3. Receptionist User & Profile
   const receptionistUser = await prisma.user.create({
@@ -4220,7 +4225,238 @@ async function main() {
     },
   });
 
-  // 26. Run Zero-Tolerance Financial Integrity Check
+  // 26. Patient Portal Ecosystem & Security Foundation Seed
+  console.log('Generating Patient Portal Ecosystem & Security Foundation Seeds...');
+
+  // 26a. Patient User Accounts
+  // Demo Patient A (Robert Sterling - Inpatient & Multi-disciplinary History)
+  const patientUserA = await prisma.user.create({
+    data: {
+      hospitalId: hospital.id,
+      role: 'PATIENT',
+      fullName: 'Robert Sterling',
+      email: 'patient.a@medcore.health',
+      passwordHash: patientPasswordHash,
+      phone: '+91 98450 11223',
+      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300',
+      isActive: true,
+      isVerified: true,
+    },
+  });
+
+  await prisma.patient.update({
+    where: { id: createdPatients[0].id },
+    data: { userId: patientUserA.id },
+  });
+
+  // Demo Patient B (Elena Rostova - Post-Op & Isolated Clinical Record)
+  const patientUserB = await prisma.user.create({
+    data: {
+      hospitalId: hospital.id,
+      role: 'PATIENT',
+      fullName: 'Elena Rostova',
+      email: 'patient.b@medcore.health',
+      passwordHash: patientPasswordHash,
+      phone: '+91 97320 44556',
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300',
+      isActive: true,
+      isVerified: true,
+    },
+  });
+
+  await prisma.patient.update({
+    where: { id: createdPatients[1].id },
+    data: { userId: patientUserB.id },
+  });
+
+  // 26b. Unredeemed Portal Invite for Patient C (Clara Oswald)
+  await prisma.portalInvite.create({
+    data: {
+      patientId: createdPatients[2].id,
+      inviteCode: 'PORTAL-2026-INVITE-DEMO',
+      email: 'clara.oswald@example.com',
+      expiresAt: new Date(Date.now() + 7 * 86400000), // 7 days valid
+      isRedeemed: false,
+      attemptsCount: 0,
+      createdById: receptionistUser.id,
+    },
+  });
+
+  // 26c. Insurance Policies & Claims (Seed-Only for Read-Only Portal View)
+  const policyA = await prisma.insurancePolicy.create({
+    data: {
+      patientId: createdPatients[0].id,
+      provider: 'Star Health & Allied Insurance Co.',
+      policyNumber: 'STAR-HLTH-2026-881290',
+      coverageType: 'Comprehensive Cardiac & Critical Care',
+      coverageLimit: 500000.00,
+      validFrom: new Date('2026-01-01'),
+      validThru: new Date('2026-12-31'),
+      status: 'ACTIVE',
+    },
+  });
+
+  await prisma.insuranceClaim.create({
+    data: {
+      policyId: policyA.id,
+      patientId: createdPatients[0].id,
+      claimNumber: 'CLM-2026-000101',
+      claimDate: new Date('2026-09-15'),
+      amount: 14500.00,
+      approvedAmount: 14500.00,
+      status: 'APPROVED',
+      description: 'Inpatient cardiac telemetry and diagnostic workup reimbursement',
+      adjudicatedAt: new Date('2026-09-20'),
+    },
+  });
+
+  const policyB = await prisma.insurancePolicy.create({
+    data: {
+      patientId: createdPatients[1].id,
+      provider: 'Max Bupa Health Insurance',
+      policyNumber: 'MAX-CARE-2026-339102',
+      coverageType: 'General Inpatient & Surgical Cover',
+      coverageLimit: 300000.00,
+      validFrom: new Date('2026-03-01'),
+      validThru: new Date('2027-02-28'),
+      status: 'ACTIVE',
+    },
+  });
+
+  await prisma.insuranceClaim.create({
+    data: {
+      policyId: policyB.id,
+      patientId: createdPatients[1].id,
+      claimNumber: 'CLM-2026-000102',
+      claimDate: new Date('2026-10-02'),
+      amount: 8200.00,
+      approvedAmount: null,
+      status: 'PENDING',
+      description: 'Post-operative surgical care and laboratory monitoring claim',
+    },
+  });
+
+  // 26d. Documents (Patient Uploads + Staff-Shared Records)
+  await prisma.document.create({
+    data: {
+      patientId: createdPatients[0].id,
+      title: 'Previous Cardiac Angiography CD & Report (2025)',
+      category: 'Medical Document',
+      source: 'PATIENT',
+      uploadedByUserId: patientUserA.id,
+      patientVisible: true,
+      fileUrl: '/uploads/patient_cardiac_angio_2025.pdf',
+      fileSize: '3.4 MB',
+      mimeType: 'application/pdf',
+    },
+  });
+
+  await prisma.document.create({
+    data: {
+      patientId: createdPatients[0].id,
+      title: 'Discharge Summary & Home Medication Protocol',
+      category: 'Medical Document',
+      source: 'STAFF',
+      uploadedByUserId: doctorUser1.id,
+      patientVisible: true,
+      fileUrl: '/uploads/discharge_summary_sterling_001.pdf',
+      fileSize: '1.2 MB',
+      mimeType: 'application/pdf',
+    },
+  });
+
+  await prisma.document.create({
+    data: {
+      patientId: createdPatients[1].id,
+      title: 'Prior Ultrasound Abdomen Report',
+      category: 'Medical Document',
+      source: 'PATIENT',
+      uploadedByUserId: patientUserB.id,
+      patientVisible: true,
+      fileUrl: '/uploads/elena_usg_prior.pdf',
+      fileSize: '2.1 MB',
+      mimeType: 'application/pdf',
+    },
+  });
+
+  // 26e. Generic Patient Notifications (Zero PHI in Notification Text)
+  const patientNotifications = [
+    {
+      userId: patientUserA.id,
+      title: 'Appointment Confirmed',
+      message: 'Your upcoming consultation with Dr. Sarah Chen on cardiology schedule has been confirmed.',
+      type: 'APPOINTMENT',
+      isRead: false,
+    },
+    {
+      userId: patientUserA.id,
+      title: 'Laboratory Report Released',
+      message: 'A new diagnostic laboratory report is ready and available in your patient vault.',
+      type: 'LAB_RESULT',
+      isRead: false,
+    },
+    {
+      userId: patientUserA.id,
+      title: 'Prescription Issued',
+      message: 'A new digital prescription has been prescribed by your attending physician.',
+      type: 'INFO',
+      isRead: true,
+      readAt: new Date(Date.now() - 86400000),
+    },
+    {
+      userId: patientUserA.id,
+      title: 'Hospital Invoice Generated',
+      message: 'A new itemized billing invoice has been generated for your recent outpatient service.',
+      type: 'INFO',
+      isRead: true,
+      readAt: new Date(Date.now() - 2 * 86400000),
+    },
+    {
+      userId: patientUserA.id,
+      title: 'Payment Receipt Confirmed',
+      message: 'Your payment transaction receipt #PAY-2026-0001 has been recorded successfully.',
+      type: 'INFO',
+      isRead: true,
+      readAt: new Date(Date.now() - 3 * 86400000),
+    },
+    {
+      userId: patientUserB.id,
+      title: 'Appointment Scheduled',
+      message: 'Your general consultation has been scheduled successfully.',
+      type: 'APPOINTMENT',
+      isRead: false,
+    },
+    {
+      userId: patientUserB.id,
+      title: 'Laboratory Report Available',
+      message: 'A new laboratory report is available for viewing.',
+      type: 'LAB_RESULT',
+      isRead: true,
+      readAt: new Date(Date.now() - 86400000),
+    },
+  ];
+
+  for (const n of patientNotifications) {
+    await prisma.notification.create({ data: n });
+  }
+
+  // 26f. Demonstrable Visibility Boundary Test Records
+  // 1. One Medical Record with portalVisible: false
+  await prisma.medicalRecord.create({
+    data: {
+      recordNumber: 'REC-2026-HIDDEN-001',
+      patientId: createdPatients[0].id,
+      doctorId: doctorProfile1.id,
+      recordType: 'Internal Note',
+      title: 'Internal Peer Review Assessment (Withheld)',
+      summary: 'Confidential clinical review notes',
+      diagnosis: 'Hypertensive evaluation (internal)',
+      notes: 'Internal hospital morbidity review - not for direct patient release.',
+      portalVisible: false,
+    },
+  });
+
+  // 27. Run Zero-Tolerance Financial Integrity Check
   console.log('Running Zero-Tolerance Financial Integrity Audit...');
   const verifyFinancialIntegrity = require('../scripts/verifyFinancialIntegrity');
   const isAuditValid = await verifyFinancialIntegrity();

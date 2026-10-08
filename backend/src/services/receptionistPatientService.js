@@ -337,6 +337,67 @@ class ReceptionistPatientService {
 
     return patient;
   }
+
+  /**
+   * Create or re-issue a Portal Invitation for a Patient
+   */
+  async createPortalInvite(patientId, receptionistUserId, options = {}) {
+    const patient = await prisma.patient.findUnique({
+      where: { id: patientId },
+      include: { user: true },
+    });
+
+    if (!patient) {
+      throw ApiError.notFound('Patient record not found');
+    }
+
+    if (patient.userId || patient.user) {
+      throw ApiError.badRequest('This patient already has an active portal account linked.');
+    }
+
+    const email = options.email || patient.email;
+    if (!email) {
+      throw ApiError.badRequest('Patient must have a valid email address to receive a portal invitation.');
+    }
+
+    const crypto = require('crypto');
+    const portalConfig = require('../config/portalConfig');
+    const randomCode = `PORTAL-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+    const expiresAt = new Date(Date.now() + portalConfig.inviteExpiryDays * 86400000);
+
+    // Invalidate previous unredeemed invites
+    await prisma.portalInvite.updateMany({
+      where: {
+        patientId,
+        isRedeemed: false,
+      },
+      data: {
+        isRedeemed: true,
+      },
+    });
+
+    const invite = await prisma.portalInvite.create({
+      data: {
+        patientId,
+        inviteCode: randomCode,
+        email: email.toLowerCase().trim(),
+        expiresAt,
+        isRedeemed: false,
+        attemptsCount: 0,
+        createdById: receptionistUserId,
+      },
+    });
+
+    return {
+      inviteId: invite.id,
+      patientId: patient.id,
+      patientName: patient.fullName,
+      email: invite.email,
+      inviteCode: invite.inviteCode,
+      expiresAt: invite.expiresAt,
+      instructions: `Please provide this invitation code (${invite.inviteCode}) and email (${invite.email}) to the patient. They can activate their account on the Patient Portal at /portal/register.`,
+    };
+  }
 }
 
 module.exports = new ReceptionistPatientService();

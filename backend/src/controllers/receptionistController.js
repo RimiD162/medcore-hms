@@ -61,6 +61,17 @@ class ReceptionistController {
     }
   }
 
+  async createPortalInvite(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const receptionistUserId = req.user.id;
+      const result = await receptionistPatientService.createPortalInvite(patientId, receptionistUserId, req.body);
+      return ApiResponse.created(res, result, 'Patient portal invitation generated successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   // ── 3. Appointments ───────────────────────────────────────────
   async getAppointments(req, res, next) {
     try {

@@ -13,6 +13,8 @@ let cachedDemoLabTech = null;
 let cachedDemoLabVerifier = null;
 let cachedDemoAccountant = null;
 let cachedDemoSeniorFinance = null;
+let cachedDemoPatientA = null;
+let cachedDemoPatientB = null;
 
 async function initDemoCache() {
   try {
@@ -47,6 +49,17 @@ async function initDemoCache() {
     const doctor = await prisma.user.findFirst({
       where: { role: 'DOCTOR', isActive: true },
       include: { doctorProfile: true },
+    });
+    const patientA = await prisma.user.findFirst({
+      where: { role: 'PATIENT', isActive: true, email: { contains: 'patient.a' } },
+      include: { patient: true },
+    }) || await prisma.user.findFirst({
+      where: { role: 'PATIENT', isActive: true },
+      include: { patient: true },
+    });
+    const patientB = await prisma.user.findFirst({
+      where: { role: 'PATIENT', isActive: true, email: { contains: 'patient.b' } },
+      include: { patient: true },
     });
 
     if (seniorFinance) {
@@ -142,6 +155,28 @@ async function initDemoCache() {
         doctorProfile: doctor.doctorProfile,
       };
     }
+
+    if (patientA) {
+      cachedDemoPatientA = {
+        id: patientA.id,
+        email: patientA.email,
+        fullName: patientA.fullName,
+        role: patientA.role,
+        patientId: patientA.patient?.id,
+        patient: patientA.patient,
+      };
+    }
+
+    if (patientB) {
+      cachedDemoPatientB = {
+        id: patientB.id,
+        email: patientB.email,
+        fullName: patientB.fullName,
+        role: patientB.role,
+        patientId: patientB.patient?.id,
+        patient: patientB.patient,
+      };
+    }
   } catch (err) {
     console.warn('⚠️ Warning: Demo auth cache initialization deferred:', err.message);
   }
@@ -162,6 +197,8 @@ async function authMiddleware(req, res, next) {
     }
 
     // ── Placeholder / Demo Fallback ──
+    const isPatientBContext = token === 'demo-patient-b-token';
+    const isPatientContext = token === 'demo-patient-token' || isPatientBContext || req.originalUrl?.includes('/api/v1/patient') || req.baseUrl?.includes('/patient');
     const isSeniorFinanceContext = token === 'demo-senior-finance-token';
     const isAccountantContext = token === 'demo-accountant-token' || isSeniorFinanceContext || req.originalUrl?.includes('/api/v1/accountant') || req.baseUrl?.includes('/accountant');
     const isLabVerifierContext = token === 'demo-lab-verifier-token';
@@ -171,6 +208,22 @@ async function authMiddleware(req, res, next) {
     const isNurseContext = token === 'demo-nurse-token' || req.originalUrl?.includes('/api/v1/nurse') || req.baseUrl?.includes('/nurse');
 
     if (!token || token.startsWith('demo-')) {
+      if (isPatientContext) {
+        if (!cachedDemoPatientA || !cachedDemoPatientB) {
+          await initDemoCache();
+        }
+
+        const patientUser = isPatientBContext
+          ? cachedDemoPatientB || cachedDemoPatientA
+          : cachedDemoPatientA || cachedDemoPatientB;
+
+        if (!patientUser) {
+          return ApiResponse.unauthorized(res, 'No active demo patient found in database');
+        }
+
+        req.user = { ...patientUser };
+        return next();
+      }
       if (isAccountantContext) {
         if (!cachedDemoAccountant || !cachedDemoSeniorFinance) {
           await initDemoCache();
@@ -268,6 +321,7 @@ async function authMiddleware(req, res, next) {
         pharmacistProfile: true,
         labTechnicianProfile: true,
         accountantProfile: true,
+        patient: true,
       },
     });
 
@@ -294,6 +348,8 @@ async function authMiddleware(req, res, next) {
       accountantId: user.accountantProfile?.id,
       accountantProfile: user.accountantProfile,
       isSeniorApprover: !!user.accountantProfile?.isSeniorApprover,
+      patientId: user.patient?.id,
+      patient: user.patient,
     };
 
     next();
@@ -500,11 +556,75 @@ function requireSeniorApprover(req, res, next) {
   return ApiResponse.forbidden(res, 'Access denied: Requires Senior Finance Approver role privileges');
 }
 
+/**
+ * Require Patient Role & Resolve Linked Patient Context
+ * Attaches req.patient as the single source of patient identity
+ */
+async function requirePatient(req, res, next) {
+  try {
+    if (!req.user) {
+      return ApiResponse.unauthorized(res, 'Authentication required');
+    }
+
+    if (req.user.role !== 'PATIENT' && req.user.role !== 'ADMIN') {
+      return ApiResponse.forbidden(res, 'Access denied: Patient role privileges required');
+    }
+
+    // Resolve patient record if not already attached
+    let patient = req.user.patient;
+    if (!patient && req.user.patientId) {
+      patient = await prisma.patient.findUnique({
+        where: { id: req.user.patientId },
+      });
+    }
+
+    if (!patient) {
+      patient = await prisma.patient.findFirst({
+        where: { userId: req.user.id },
+      });
+    }
+
+    if (!patient) {
+      return ApiResponse.forbidden(
+        res,
+        'No active patient profile is linked to this account. Please contact the hospital front desk.'
+      );
+    }
+
+    // Security Headers on all portal responses
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    req.patient = patient;
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * Require Staff Role (Blocks Patient users from accessing staff endpoints)
+ */
+function requireStaff(req, res, next) {
+  if (!req.user) {
+    return ApiResponse.unauthorized(res, 'Authentication required');
+  }
+
+  if (req.user.role === 'PATIENT') {
+    return ApiResponse.forbidden(res, 'Access denied: Staff role privileges required');
+  }
+
+  next();
+}
+
 module.exports = {
   authMiddleware,
   authenticate: authMiddleware,
   requireRole,
   requireSeniorApprover,
+  requirePatient,
+  requireStaff,
   authorize,
   authorizePatientAccess,
   authorizeNursePatientAccess,

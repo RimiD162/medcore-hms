@@ -23,6 +23,7 @@ router.post(
   receptionistController.registerPatient
 );
 router.get('/patients/:patientId', receptionistController.getPatientById);
+router.post('/patients/:patientId/portal-invite', receptionistController.createPortalInvite);
 
 // ── 3. Appointments & Schedule ────────────────────────────────
 router.get('/appointments', receptionistController.getAppointments);
