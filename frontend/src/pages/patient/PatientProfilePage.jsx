@@ -5,13 +5,8 @@ import {
   Phone,
   Mail,
   MapPin,
-  Heart,
   Shield,
-  AlertCircle,
   Save,
-  CheckCircle2,
-  Calendar,
-  Lock,
 } from 'lucide-react';
 import patientApi from '../../api/patientApi';
 
@@ -47,7 +42,6 @@ export const PatientProfilePage = () => {
         setLoading(false);
       }
     }
-
     loadProfile();
   }, []);
 
@@ -74,282 +68,173 @@ export const PatientProfilePage = () => {
 
   if (loading) {
     return (
-      <div style={{ padding: '2rem 0', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <div style={{ height: 160, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.05)' }} />
-        <div style={{ height: 300, borderRadius: 16, backgroundColor: 'rgba(0,0,0,0.03)' }} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <div className="pp-skeleton" style={{ height: 120, borderRadius: 20 }} />
+        <div className="pp-skeleton" style={{ height: 180, borderRadius: 18 }} />
+        <div className="pp-skeleton" style={{ height: 280, borderRadius: 18 }} />
       </div>
     );
   }
 
+  const avatarInitial = profile?.fullName ? profile.fullName.charAt(0).toUpperCase() : 'P';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 900 }}>
-      {/* ── Profile Header Card ────────────────────────────────────── */}
-      <div style={{
-        padding: '1.75rem',
-        borderRadius: 20,
-        backgroundColor: 'var(--bg-surface, #ffffff)',
-        border: '1px solid var(--border-subtle, #e2e8f0)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '1.5rem',
-        flexWrap: 'wrap',
-      }}>
+
+      {/* ── Profile Header Card ─────────────────────────────── */}
+      <div className="pp-card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
         <div style={{
-          width: 72,
-          height: 72,
-          borderRadius: 20,
+          width: 76, height: 76, borderRadius: 20,
           background: 'linear-gradient(135deg, #0284c7 0%, #00d2b4 100%)',
-          color: '#ffffff',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '1.8rem',
-          fontWeight: 800,
-          boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)',
+          color: '#fff',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '1.85rem', fontWeight: 800,
+          boxShadow: '0 6px 16px rgba(2,132,199,0.3)',
+          flexShrink: 0,
         }}>
-          {profile?.fullName ? profile.fullName.charAt(0) : 'P'}
+          {avatarInitial}
         </div>
 
         <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.4rem' }}>
+            <h2 style={{ fontSize: '1.45rem', fontWeight: 800, margin: 0, color: 'var(--pp-text-primary)', letterSpacing: '-0.02em' }}>
               {profile?.fullName}
             </h2>
-            <span style={{
-              padding: '0.2rem 0.6rem',
-              borderRadius: 20,
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              backgroundColor: '#e0f2fe',
-              color: '#0369a1',
-            }}>
-              {profile?.patientIdNumber}
-            </span>
-            <span style={{
-              padding: '0.2rem 0.6rem',
-              borderRadius: 20,
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              backgroundColor: profile?.status === 'Active' ? '#dcfce7' : '#fef3c7',
-              color: profile?.status === 'Active' ? '#15803d' : '#b45309',
-            }}>
+            <span className="pp-badge pp-badge-blue">{profile?.patientIdNumber}</span>
+            <span className={`pp-badge ${profile?.status === 'Active' ? 'pp-badge-green' : 'pp-badge-yellow'}`}>
               {profile?.status || 'Active'}
             </span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginTop: '0.5rem', fontSize: '0.85rem', color: '#64748b', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', fontSize: '0.85rem', color: 'var(--pp-text-muted)', flexWrap: 'wrap' }}>
             {profile?.dateOfBirth && (
-              <div>DOB: {new Date(profile.dateOfBirth).toLocaleDateString()} ({profile.age} yrs)</div>
+              <span>DOB: {new Date(profile.dateOfBirth).toLocaleDateString()} ({profile.age} yrs)</span>
             )}
-            <div>Gender: {profile?.gender}</div>
+            <span>Gender: {profile?.gender}</span>
             {profile?.bloodGroup && (
-              <div style={{ fontWeight: 600, color: '#ef4444' }}>Blood Group: {profile.bloodGroup}</div>
+              <span style={{ fontWeight: 700, color: '#ef4444' }}>Blood Group: {profile.bloodGroup}</span>
             )}
           </div>
         </div>
       </div>
 
-      {/* ── Read-Only Clinical Records Card ────────────────────────── */}
-      <div style={{
-        padding: '1.5rem',
-        borderRadius: 18,
-        backgroundColor: 'var(--bg-surface, #ffffff)',
-        border: '1px solid var(--border-subtle, #e2e8f0)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+      {/* ── Clinical Information (Read-Only) ─────────────────── */}
+      <div className="pp-card">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
           <Shield size={18} color="#0284c7" />
-          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Clinical Information (Read-Only)</h3>
+          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: 'var(--pp-text-primary)' }}>
+            Clinical Information (Read-Only)
+          </h3>
         </div>
-
-        <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: 0, marginBottom: '1.25rem' }}>
-          Clinical parameters, allergies, and chronic condition records are managed strictly by licensed healthcare staff for patient safety.
+        <p style={{ fontSize: '0.8rem', color: 'var(--pp-text-muted)', marginTop: 0, marginBottom: '1.25rem' }}>
+          Clinical parameters, allergies, and chronic conditions are managed by licensed healthcare staff for patient safety.
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
-          <div style={{ padding: '1rem', borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.02)', border: '1px solid rgba(0,0,0,0.05)' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: '1rem' }}>
+          <div style={{ padding: '1rem', borderRadius: 12, background: 'var(--pp-card-item-bg)', border: '1px solid var(--pp-card-item-border)' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--pp-text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' }}>
               Recorded Allergies
             </div>
-            <div style={{ marginTop: '0.4rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-              {profile?.allergies && profile.allergies.length > 0 ? (
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+              {profile?.allergies?.length > 0 ? (
                 profile.allergies.map((a, i) => (
-                  <span key={i} style={{ padding: '0.2rem 0.6rem', borderRadius: 6, backgroundColor: '#fee2e2', color: '#b91c1c', fontSize: '0.8rem', fontWeight: 600 }}>
-                    ⚠️ {a}
-                  </span>
+                  <span key={i} className="pp-badge pp-badge-red">⚠️ {a}</span>
                 ))
               ) : (
-                <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>No known allergies recorded</span>
+                <span style={{ fontSize: '0.85rem', color: 'var(--pp-text-dim)' }}>No known allergies recorded</span>
               )}
             </div>
           </div>
 
-          <div style={{ padding: '1rem', borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.02)', border: '1px solid rgba(0,0,0,0.05)' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <div style={{ padding: '1rem', borderRadius: 12, background: 'var(--pp-card-item-bg)', border: '1px solid var(--pp-card-item-border)' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--pp-text-dim)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '0.5rem' }}>
               Chronic Conditions
             </div>
-            <div style={{ marginTop: '0.4rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-              {profile?.chronicConditions && profile.chronicConditions.length > 0 ? (
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+              {profile?.chronicConditions?.length > 0 ? (
                 profile.chronicConditions.map((c, i) => (
-                  <span key={i} style={{ padding: '0.2rem 0.6rem', borderRadius: 6, backgroundColor: '#e0f2fe', color: '#0369a1', fontSize: '0.8rem', fontWeight: 600 }}>
-                    {c}
-                  </span>
+                  <span key={i} className="pp-badge pp-badge-blue">{c}</span>
                 ))
               ) : (
-                <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>No chronic conditions recorded</span>
+                <span style={{ fontSize: '0.85rem', color: 'var(--pp-text-dim)' }}>No chronic conditions recorded</span>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Editable Contact & Emergency Form ─────────────────────── */}
-      <form onSubmit={handleSubmit} style={{
-        padding: '1.75rem',
-        borderRadius: 18,
-        backgroundColor: 'var(--bg-surface, #ffffff)',
-        border: '1px solid var(--border-subtle, #e2e8f0)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '1.25rem',
-      }}>
+      {/* ── Editable Contact Information ─────────────────────── */}
+      <form onSubmit={handleSubmit} className="pp-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Phone size={18} color="#0284c7" />
-          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Editable Contact Information</h3>
+          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: 'var(--pp-text-primary)' }}>
+            Editable Contact Information
+          </h3>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem' }}>
-          {/* Phone */}
-          <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#475569', marginBottom: '0.35rem' }}>
-              Primary Phone Number
-            </label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: '1.25rem' }}>
+          <div className="pp-form-group">
+            <label className="pp-label">Primary Phone Number</label>
             <input
               type="text"
               name="phone"
+              className="pp-input"
               value={formData.phone}
               onChange={handleChange}
               required
-              style={{
-                width: '100%',
-                padding: '0.65rem 0.85rem',
-                borderRadius: 8,
-                border: '1px solid #cbd5e1',
-                fontSize: '0.9rem',
-                outline: 'none',
-              }}
             />
           </div>
 
-          {/* Email (Read only authentication email) */}
-          <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#475569', marginBottom: '0.35rem' }}>
-              Portal Login Email (Immutable)
-            </label>
+          <div className="pp-form-group">
+            <label className="pp-label">Portal Login Email (Immutable)</label>
             <input
               type="email"
+              className="pp-input"
               value={profile?.email || ''}
               disabled
-              style={{
-                width: '100%',
-                padding: '0.65rem 0.85rem',
-                borderRadius: 8,
-                border: '1px solid #e2e8f0',
-                backgroundColor: '#f1f5f9',
-                color: '#64748b',
-                fontSize: '0.9rem',
-                cursor: 'not-allowed',
-              }}
             />
           </div>
 
-          {/* Emergency Contact Name */}
-          <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#475569', marginBottom: '0.35rem' }}>
-              Emergency Contact Name / Relationship
-            </label>
+          <div className="pp-form-group">
+            <label className="pp-label">Emergency Contact Name / Relationship</label>
             <input
               type="text"
               name="emergencyContact"
+              className="pp-input"
               value={formData.emergencyContact}
               onChange={handleChange}
               placeholder="e.g. John Doe (Spouse)"
-              style={{
-                width: '100%',
-                padding: '0.65rem 0.85rem',
-                borderRadius: 8,
-                border: '1px solid #cbd5e1',
-                fontSize: '0.9rem',
-                outline: 'none',
-              }}
             />
           </div>
 
-          {/* Emergency Phone */}
-          <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#475569', marginBottom: '0.35rem' }}>
-              Emergency Contact Phone
-            </label>
+          <div className="pp-form-group">
+            <label className="pp-label">Emergency Contact Phone</label>
             <input
               type="text"
               name="emergencyPhone"
+              className="pp-input"
               value={formData.emergencyPhone}
               onChange={handleChange}
               placeholder="+91 98765 43210"
-              style={{
-                width: '100%',
-                padding: '0.65rem 0.85rem',
-                borderRadius: 8,
-                border: '1px solid #cbd5e1',
-                fontSize: '0.9rem',
-                outline: 'none',
-              }}
             />
           </div>
         </div>
 
-        {/* Address */}
-        <div>
-          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#475569', marginBottom: '0.35rem' }}>
-            Residential Address
-          </label>
+        <div className="pp-form-group">
+          <label className="pp-label">Residential Address</label>
           <textarea
             name="address"
+            className="pp-textarea"
             value={formData.address}
             onChange={handleChange}
             rows={2}
-            style={{
-              width: '100%',
-              padding: '0.65rem 0.85rem',
-              borderRadius: 8,
-              border: '1px solid #cbd5e1',
-              fontSize: '0.9rem',
-              outline: 'none',
-              resize: 'vertical',
-            }}
           />
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-          <button
-            type="submit"
-            disabled={saving}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              padding: '0.65rem 1.4rem',
-              borderRadius: 8,
-              fontSize: '0.88rem',
-              fontWeight: 700,
-              backgroundColor: '#0284c7',
-              color: '#ffffff',
-              border: 'none',
-              cursor: saving ? 'not-allowed' : 'pointer',
-              opacity: saving ? 0.7 : 1,
-            }}
-          >
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button type="submit" className="pp-btn-primary" disabled={saving}>
             <Save size={16} />
-            <span>{saving ? 'Saving...' : 'Save Profile Changes'}</span>
+            <span>{saving ? 'Saving…' : 'Save Profile Changes'}</span>
           </button>
         </div>
       </form>

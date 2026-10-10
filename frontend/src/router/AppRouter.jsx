@@ -258,6 +258,7 @@ export const AppRouter = () => {
           <Route path="lab-reports/:reportId" element={<PatientLabReportDetailPage />} />
           <Route path="billing" element={<PatientBillingPage />} />
           <Route path="billing/:invoiceId" element={<PatientInvoiceDetailPage />} />
+          <Route path="invoices/:invoiceId" element={<PatientInvoiceDetailPage />} />
           <Route path="payments" element={<PatientPaymentsPage />} />
           <Route path="documents" element={<PatientDocumentsPage />} />
           <Route path="insurance" element={<PatientInsurancePage />} />

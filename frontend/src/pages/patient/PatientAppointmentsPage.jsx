@@ -1,23 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useOutletContext, useNavigate } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import {
   Calendar,
   CalendarPlus,
   Clock,
   MapPin,
-  CheckCircle2,
-  AlertCircle,
-  XCircle,
-  ChevronRight,
-  RotateCcw,
-  Ban,
-  Search,
 } from 'lucide-react';
 import patientApi from '../../api/patientApi';
 
 export const PatientAppointmentsPage = () => {
   const { onShowToast } = useOutletContext() || {};
-  const [tab, setTab] = useState('upcoming'); // 'upcoming' | 'past' | 'all'
+  const [tab, setTab] = useState('upcoming');
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState([]);
   const [selectedCancelApt, setSelectedCancelApt] = useState(null);
@@ -34,11 +27,8 @@ export const PatientAppointmentsPage = () => {
       const params = {};
       if (tab === 'upcoming') params.timeframe = 'upcoming';
       else if (tab === 'past') params.timeframe = 'past';
-
       const res = await patientApi.getAppointments(params);
-      if (res.data) {
-        setAppointments(res.data);
-      }
+      if (res.data) setAppointments(res.data);
     } catch (err) {
       if (onShowToast) onShowToast(err.message || 'Failed to fetch appointments');
     } finally {
@@ -49,7 +39,6 @@ export const PatientAppointmentsPage = () => {
   const handleCancelSubmit = async (e) => {
     e.preventDefault();
     if (!selectedCancelApt || cancelReason.trim().length < 3) return;
-
     try {
       setCancelling(true);
       await patientApi.cancelAppointment(selectedCancelApt.id, { cancelReason });
@@ -64,41 +53,32 @@ export const PatientAppointmentsPage = () => {
     }
   };
 
+  const getStatusBadgeClass = (status) => {
+    switch (status) {
+      case 'CONFIRMED': return 'pp-badge pp-badge-green';
+      case 'SCHEDULED': return 'pp-badge pp-badge-yellow';
+      case 'COMPLETED': return 'pp-badge pp-badge-blue';
+      default: return 'pp-badge pp-badge-red';
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      
-      {/* ── Top Bar ─────────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h1 style={{ fontSize: '1.45rem', fontWeight: 800, margin: 0 }}>My Appointments</h1>
-          <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0, marginTop: '0.2rem' }}>
-            Manage scheduled doctor visits, follow-ups, and booking history.
-          </p>
-        </div>
 
-        <Link
-          to="/app/patient/appointments/book"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            padding: '0.6rem 1.1rem',
-            borderRadius: 10,
-            fontSize: '0.85rem',
-            fontWeight: 700,
-            backgroundColor: '#0284c7',
-            color: '#ffffff',
-            textDecoration: 'none',
-            boxShadow: '0 2px 8px rgba(2, 132, 199, 0.25)',
-          }}
-        >
+      {/* Page Header */}
+      <div className="pp-page-header">
+        <div>
+          <h1 className="pp-page-title">My Appointments</h1>
+          <p className="pp-page-subtitle">Manage scheduled doctor visits, follow-ups, and booking history.</p>
+        </div>
+        <Link to="/app/patient/appointments/book" className="pp-btn-primary">
           <CalendarPlus size={16} />
           <span>Book New Visit</span>
         </Link>
       </div>
 
-      {/* ── Filter Tabs ─────────────────────────────────────────────── */}
-      <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border-subtle, #e2e8f0)', paddingBottom: '0.5rem' }}>
+      {/* Tabs */}
+      <div className="pp-tabs">
         {[
           { id: 'upcoming', label: 'Upcoming Consultations' },
           { id: 'past', label: 'Past Visits' },
@@ -106,76 +86,40 @@ export const PatientAppointmentsPage = () => {
         ].map((t) => (
           <button
             key={t.id}
+            className={`pp-tab${tab === t.id ? ' active' : ''}`}
             onClick={() => setTab(t.id)}
-            style={{
-              padding: '0.5rem 1rem',
-              borderRadius: 8,
-              fontSize: '0.85rem',
-              fontWeight: tab === t.id ? 700 : 500,
-              backgroundColor: tab === t.id ? '#0284c7' : 'transparent',
-              color: tab === t.id ? '#ffffff' : '#64748b',
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'all 0.18s ease',
-            }}
           >
             {t.label}
           </button>
         ))}
       </div>
 
-      {/* ── Appointments List / Loading / Empty State ────────────────── */}
+      {/* List */}
       {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1rem 0' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {[1, 2, 3].map((i) => (
-            <div key={i} style={{ height: 110, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.04)' }} />
+            <div key={i} className="pp-skeleton" style={{ height: 104 }} />
           ))}
         </div>
       ) : appointments.length === 0 ? (
-        <div style={{
-          padding: '3.5rem 1.5rem',
-          borderRadius: 18,
-          backgroundColor: 'var(--bg-surface, #ffffff)',
-          border: '1px solid var(--border-subtle, #e2e8f0)',
-          textAlign: 'center',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: '1rem',
-        }}>
+        <div className="pp-card" style={{ textAlign: 'center', padding: '3.5rem 1.5rem' }}>
           <div style={{
-            width: 56,
-            height: 56,
-            borderRadius: '50%',
-            backgroundColor: 'rgba(2, 132, 199, 0.1)',
-            color: '#0284c7',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            width: 60, height: 60, borderRadius: '50%',
+            backgroundColor: 'var(--pp-accent-light)', color: 'var(--pp-accent)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 1rem',
           }}>
             <Calendar size={28} />
           </div>
-          <div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>No appointments found</h3>
-            <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0.4rem 0 0 0' }}>
-              {tab === 'upcoming'
-                ? 'You do not have any upcoming doctor appointments scheduled.'
-                : 'No appointment history records matched this filter.'}
-            </p>
-          </div>
-          <Link
-            to="/app/patient/appointments/book"
-            style={{
-              padding: '0.55rem 1.2rem',
-              borderRadius: 8,
-              fontSize: '0.85rem',
-              fontWeight: 700,
-              backgroundColor: '#0284c7',
-              color: '#ffffff',
-              textDecoration: 'none',
-              marginTop: '0.5rem',
-            }}
-          >
+          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0 0 0.4rem', color: 'var(--pp-text-primary)' }}>
+            No appointments found
+          </h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--pp-text-muted)', margin: '0 0 1.2rem' }}>
+            {tab === 'upcoming'
+              ? 'You do not have any upcoming doctor appointments scheduled.'
+              : 'No appointment history records matched this filter.'}
+          </p>
+          <Link to="/app/patient/appointments/book" className="pp-btn-primary">
             Book an Appointment Now
           </Link>
         </div>
@@ -184,131 +128,66 @@ export const PatientAppointmentsPage = () => {
           {appointments.map((apt) => {
             const isUpcoming = ['SCHEDULED', 'CONFIRMED'].includes(apt.status);
             return (
-              <div
-                key={apt.id}
-                style={{
-                  padding: '1.25rem 1.5rem',
-                  borderRadius: 16,
-                  backgroundColor: 'var(--bg-surface, #ffffff)',
-                  border: '1px solid var(--border-subtle, #e2e8f0)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  flexWrap: 'wrap',
-                  gap: '1rem',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
-                }}
-              >
-                {/* Left: Date Badge + Doctor Info */}
+              <div key={apt.id} className="pp-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', padding: '1.25rem 1.5rem' }}>
+                {/* Left */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
                   <div style={{
-                    width: 54,
-                    height: 54,
-                    borderRadius: 12,
-                    backgroundColor: isUpcoming ? '#0284c7' : '#94a3b8',
-                    color: '#ffffff',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 800,
-                    lineHeight: 1,
-                    flexShrink: 0,
+                    width: 54, height: 54, borderRadius: 13, flexShrink: 0,
+                    background: isUpcoming ? 'linear-gradient(135deg,#0284c7,#0369a1)' : 'var(--pp-surface-alt)',
+                    color: isUpcoming ? '#fff' : 'var(--pp-text-muted)',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    fontWeight: 800, lineHeight: 1,
+                    boxShadow: isUpcoming ? '0 4px 12px rgba(2,132,199,0.3)' : 'none',
+                    border: isUpcoming ? 'none' : '1px solid var(--pp-border)',
                   }}>
-                    <span style={{ fontSize: '0.65rem', textTransform: 'uppercase' }}>
+                    <span style={{ fontSize: '0.62rem', textTransform: 'uppercase' }}>
                       {new Date(apt.appointmentDate).toLocaleString('default', { month: 'short' })}
                     </span>
-                    <span style={{ fontSize: '1.3rem', marginTop: '0.1rem' }}>
+                    <span style={{ fontSize: '1.3rem' }}>
                       {new Date(apt.appointmentDate).getDate()}
                     </span>
                   </div>
 
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: 700, fontSize: '1rem' }}>
+                      <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--pp-text-primary)' }}>
                         Dr. {apt.doctor?.name || 'Physician'}
                       </span>
-                      <span style={{
-                        fontSize: '0.7rem',
-                        fontWeight: 700,
-                        padding: '0.15rem 0.5rem',
-                        borderRadius: 6,
-                        backgroundColor:
-                          apt.status === 'CONFIRMED'
-                            ? '#dcfce7'
-                            : apt.status === 'SCHEDULED'
-                              ? '#fef3c7'
-                              : apt.status === 'COMPLETED'
-                                ? '#e0f2fe'
-                                : '#fee2e2',
-                        color:
-                          apt.status === 'CONFIRMED'
-                            ? '#15803d'
-                            : apt.status === 'SCHEDULED'
-                              ? '#b45309'
-                              : apt.status === 'COMPLETED'
-                                ? '#0369a1'
-                                : '#b91c1c',
-                      }}>
-                        {apt.status}
-                      </span>
-                      <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>
+                      <span className={getStatusBadgeClass(apt.status)}>{apt.status}</span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--pp-text-muted)', fontWeight: 600 }}>
                         #{apt.appointmentNumber}
                       </span>
                     </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '0.82rem', color: '#64748b', marginTop: '0.3rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '0.82rem', color: 'var(--pp-text-muted)', marginTop: '0.25rem', flexWrap: 'wrap' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                        <Clock size={14} />
+                        <Clock size={13} />
                         <span>{apt.appointmentTime} ({apt.type})</span>
                       </div>
                       {apt.doctor?.department && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                          <MapPin size={14} />
-                          <span>{apt.doctor.department} {apt.doctor.roomNumber ? `(Room ${apt.doctor.roomNumber})` : ''}</span>
+                          <MapPin size={13} />
+                          <span>{apt.doctor.department}{apt.doctor.roomNumber ? ` (Room ${apt.doctor.roomNumber})` : ''}</span>
                         </div>
                       )}
                     </div>
-
                     {apt.reason && (
-                      <div style={{ fontSize: '0.78rem', color: '#475569', marginTop: '0.35rem' }}>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--pp-text-secondary)', marginTop: '0.3rem' }}>
                         Reason: {apt.reason}
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* Right: Actions */}
+                {/* Right */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Link
-                    to={`/app/patient/appointments/${apt.id}`}
-                    style={{
-                      padding: '0.45rem 0.85rem',
-                      borderRadius: 8,
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      backgroundColor: 'rgba(0,0,0,0.04)',
-                      color: 'inherit',
-                      textDecoration: 'none',
-                      border: '1px solid rgba(0,0,0,0.08)',
-                    }}
-                  >
+                  <Link to={`/app/patient/appointments/${apt.id}`} className="pp-btn-secondary">
                     Details
                   </Link>
-
                   {isUpcoming && (
                     <button
+                      className="pp-btn-secondary"
                       onClick={() => setSelectedCancelApt(apt)}
-                      style={{
-                        padding: '0.45rem 0.85rem',
-                        borderRadius: 8,
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        backgroundColor: '#fee2e2',
-                        color: '#b91c1c',
-                        border: 'none',
-                        cursor: 'pointer',
-                      }}
+                      style={{ color: '#dc2626', borderColor: 'rgba(220,38,38,0.3)', background: 'rgba(239,68,68,0.06)' }}
                     >
                       Cancel
                     </button>
@@ -320,90 +199,49 @@ export const PatientAppointmentsPage = () => {
         </div>
       )}
 
-      {/* ── Cancel Appointment Confirmation Modal ────────────────────── */}
+      {/* Cancel Modal */}
       {selectedCancelApt && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          backdropFilter: 'blur(4px)',
-          zIndex: 100,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '1rem',
-        }}>
-          <div style={{
-            backgroundColor: 'var(--bg-surface, #ffffff)',
-            borderRadius: 18,
-            padding: '1.75rem',
-            maxWidth: 460,
-            width: '100%',
-            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
-          }}>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#b91c1c' }}>
+        <div className="pp-modal-overlay" onClick={() => setSelectedCancelApt(null)}>
+          <div className="pp-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, margin: '0 0 0.35rem', color: '#dc2626' }}>
               Cancel Appointment
             </h3>
-            <p style={{ fontSize: '0.85rem', color: '#64748b', margin: '0.4rem 0 1rem 0' }}>
-              Are you sure you want to cancel your consultation with Dr. {selectedCancelApt.doctor?.name} on {new Date(selectedCancelApt.appointmentDate).toLocaleDateString()} at {selectedCancelApt.appointmentTime}?
+            <p style={{ fontSize: '0.85rem', color: 'var(--pp-text-muted)', margin: '0 0 1.25rem' }}>
+              Are you sure you want to cancel your consultation with Dr.&nbsp;
+              {selectedCancelApt.doctor?.name} on&nbsp;
+              {new Date(selectedCancelApt.appointmentDate).toLocaleDateString()} at&nbsp;
+              {selectedCancelApt.appointmentTime}?
             </p>
 
             <form onSubmit={handleCancelSubmit}>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.35rem' }}>
-                Cancellation Reason (Required)
-              </label>
-              <textarea
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="Please specify why you are cancelling this appointment..."
-                required
-                rows={3}
-                style={{
-                  width: '100%',
-                  padding: '0.65rem',
-                  borderRadius: 8,
-                  border: '1px solid #cbd5e1',
-                  fontSize: '0.88rem',
-                  outline: 'none',
-                  resize: 'vertical',
-                }}
-              />
+              <div className="pp-form-group">
+                <label className="pp-label">Cancellation Reason (Required)</label>
+                <textarea
+                  className="pp-textarea"
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Please specify why you are cancelling this appointment…"
+                  required
+                  rows={3}
+                />
+              </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.25rem' }}>
                 <button
                   type="button"
+                  className="pp-btn-secondary"
                   onClick={() => setSelectedCancelApt(null)}
                   disabled={cancelling}
-                  style={{
-                    padding: '0.55rem 1rem',
-                    borderRadius: 8,
-                    fontSize: '0.85rem',
-                    fontWeight: 600,
-                    border: '1px solid #cbd5e1',
-                    backgroundColor: 'transparent',
-                    cursor: 'pointer',
-                  }}
                 >
                   Keep Appointment
                 </button>
                 <button
                   type="submit"
                   disabled={cancelling || cancelReason.trim().length < 3}
-                  style={{
-                    padding: '0.55rem 1.2rem',
-                    borderRadius: 8,
-                    fontSize: '0.85rem',
-                    fontWeight: 700,
-                    backgroundColor: '#ef4444',
-                    color: '#ffffff',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
+                  className="pp-btn-primary"
+                  style={{ background: 'linear-gradient(135deg,#dc2626,#b91c1c)', boxShadow: '0 2px 8px rgba(220,38,38,0.3)' }}
                 >
-                  {cancelling ? 'Cancelling...' : 'Confirm Cancellation'}
+                  {cancelling ? 'Cancelling…' : 'Confirm Cancellation'}
                 </button>
               </div>
             </form>
